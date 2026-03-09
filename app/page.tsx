@@ -18,19 +18,10 @@ export default function Home() {
   }
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "var(--bg)" }}>
+    <div className="layout-root">
       {/* Sidebar */}
       <aside
-        style={{
-          width: "260px",
-          background: "var(--surface)",
-          borderRight: "1px solid var(--border)",
-          padding: "28px 16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "4px",
-          flexShrink: 0,
-        }}
+        className="layout-sidebar"
       >
         <p
           style={{
@@ -84,16 +75,10 @@ export default function Home() {
 
       {/* Main */}
       <main
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          padding: "32px 40px",
-        }}
+        className="layout-main"
       >
         {/* Header */}
-        <div style={{ marginBottom: "24px" }}>
+        <div className="layout-main-header">
           <h1
             style={{
               fontFamily: "Instrument Serif, serif",

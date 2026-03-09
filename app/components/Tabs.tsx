@@ -14,12 +14,7 @@ const tabs: { id: TabType; label: string }[] = [
 export default function Tabs({ activeTab, onChange }: Props) {
   return (
     <div
-      style={{
-        display: "flex",
-        gap: "4px",
-        borderBottom: "1px solid var(--border)",
-        marginBottom: "24px",
-      }}
+      className="tabs-container"
     >
       {tabs.map((tab) => (
         <button
