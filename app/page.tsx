@@ -17,41 +17,111 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-950 text-white">
+    <div style={{ display: "flex", height: "100vh", background: "var(--bg)" }}>
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-900 p-4 flex flex-col gap-2 border-r border-gray-800">
-        <h2 className="text-lg font-bold mb-4 text-blue-400">📚 Lessons</h2>
+      <aside
+        style={{
+          width: "260px",
+          background: "var(--surface)",
+          borderRight: "1px solid var(--border)",
+          padding: "28px 16px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "4px",
+          flexShrink: 0,
+        }}
+      >
+        <p
+          style={{
+            fontSize: "11px",
+            fontWeight: 600,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "var(--text-muted)",
+            padding: "0 12px",
+            marginBottom: "12px",
+          }}
+        >
+          Lessons
+        </p>
         {lessons.map((lesson) => (
           <button
             key={lesson.id}
             onClick={() => selectLesson(lesson)}
-            className={`text-left px-4 py-3 rounded-lg transition-all text-sm font-medium ${
-              selectedLesson.id === lesson.id
-                ? "bg-blue-600 text-white"
-                : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-            }`}
+            style={{
+              textAlign: "left",
+              padding: "10px 12px",
+              borderRadius: "8px",
+              border: "none",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: selectedLesson.id === lesson.id ? 600 : 400,
+              background:
+                selectedLesson.id === lesson.id
+                  ? "var(--accent-soft)"
+                  : "transparent",
+              color:
+                selectedLesson.id === lesson.id
+                  ? "var(--accent)"
+                  : "var(--text)",
+              transition: "all 0.15s ease",
+              fontFamily: "inherit",
+            }}
+            onMouseEnter={(e) => {
+              if (selectedLesson.id !== lesson.id)
+                (e.target as HTMLElement).style.background = "var(--surface2)";
+            }}
+            onMouseLeave={(e) => {
+              if (selectedLesson.id !== lesson.id)
+                (e.target as HTMLElement).style.background = "transparent";
+            }}
           >
             {lesson.title}
           </button>
         ))}
       </aside>
 
-      {/* Main Content */}
-      <main className="flex flex-col flex-1 p-6 overflow-hidden">
+      {/* Main */}
+      <main
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          padding: "32px 40px",
+        }}
+      >
         {/* Header */}
-        <h1 className="text-2xl font-bold mb-1">🎓 AI LMS Tutor</h1>
-        <p className="text-gray-400 text-sm mb-4">
-          Currently studying:{" "}
-          <span className="text-blue-400 font-semibold">
+        <div style={{ marginBottom: "24px" }}>
+          <h1
+            style={{
+              fontFamily: "Instrument Serif, serif",
+              fontSize: "28px",
+              fontWeight: 400,
+              color: "var(--text)",
+              marginBottom: "4px",
+            }}
+          >
             {selectedLesson.title}
-          </span>
-        </p>
+          </h1>
+          <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+            AI-powered learning — ask questions, take quizzes, and review
+            summaries
+          </p>
+        </div>
 
         {/* Tabs */}
         <Tabs activeTab={activeTab} onChange={setActiveTab} />
 
-        {/* Tab Content */}
-        <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Content */}
+        <div
+          style={{
+            flex: 1,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           {activeTab === "chat" && <ChatTab lesson={selectedLesson} />}
           {activeTab === "quiz" && <QuizTab lesson={selectedLesson} />}
           {activeTab === "summary" && (

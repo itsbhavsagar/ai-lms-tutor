@@ -1,11 +1,7 @@
 "use client";
-
 export type TabType = "chat" | "quiz" | "summary" | "notes";
 
-type Props = {
-  activeTab: TabType;
-  onChange: (tab: TabType) => void;
-};
+type Props = { activeTab: TabType; onChange: (tab: TabType) => void };
 
 const tabs: { id: TabType; label: string }[] = [
   { id: "chat", label: "💬 Chat" },
@@ -16,16 +12,34 @@ const tabs: { id: TabType; label: string }[] = [
 
 export default function Tabs({ activeTab, onChange }: Props) {
   return (
-    <div className="flex gap-2 border-b border-gray-800 mb-6">
+    <div
+      style={{
+        display: "flex",
+        gap: "4px",
+        borderBottom: "1px solid var(--border)",
+        marginBottom: "24px",
+      }}
+    >
       {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}
-          className={`px-4 py-2 text-sm font-medium transition-all border-b-2 -mb-[2px] ${
-            activeTab === tab.id
-              ? "border-blue-500 text-blue-400"
-              : "border-transparent text-gray-500 hover:text-gray-300"
-          }`}
+          style={{
+            padding: "8px 16px",
+            fontSize: "13px",
+            fontWeight: activeTab === tab.id ? 600 : 400,
+            color: activeTab === tab.id ? "var(--accent)" : "var(--text-muted)",
+            background: "transparent",
+            border: "none",
+            borderBottom:
+              activeTab === tab.id
+                ? "2px solid var(--accent)"
+                : "2px solid transparent",
+            marginBottom: "-1px",
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+            fontFamily: "inherit",
+          }}
         >
           {tab.label}
         </button>

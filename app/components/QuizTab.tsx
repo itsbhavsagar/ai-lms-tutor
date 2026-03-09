@@ -44,13 +44,32 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-y-auto">
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        flex: 1,
+        overflowY: "auto",
+      }}
+    >
       {/* Generate Button */}
-      <div className="mb-6">
+      <div style={{ marginBottom: "24px" }}>
         <button
           onClick={generateQuiz}
           disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-6 py-3 rounded-lg text-sm font-medium transition-all"
+          style={{
+            padding: "10px 22px",
+            borderRadius: "8px",
+            border: "none",
+            background: "var(--accent)",
+            color: "#fff",
+            fontSize: "14px",
+            fontWeight: 500,
+            cursor: loading ? "not-allowed" : "pointer",
+            opacity: loading ? 0.5 : 1,
+            fontFamily: "inherit",
+            transition: "opacity 0.15s",
+          }}
         >
           {loading
             ? "Generating Quiz..."
@@ -62,44 +81,88 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
 
       {/* Loading */}
       {loading && (
-        <div className="text-gray-400 text-sm animate-pulse">
+        <div style={{ color: "var(--text-muted)", fontSize: "14px" }}>
           AI is generating your quiz...
         </div>
       )}
 
       {/* Questions */}
       {!loading && questions.length > 0 && (
-        <div className="space-y-6">
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {questions.map((q, qIndex) => (
             <div
               key={qIndex}
-              className="bg-gray-900 rounded-xl p-5 border border-gray-800"
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                borderRadius: "12px",
+                padding: "20px",
+              }}
             >
-              <p className="text-sm font-semibold text-white mb-4">
+              <p
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "var(--text)",
+                  marginBottom: "14px",
+                  lineHeight: "1.5",
+                }}
+              >
                 {qIndex + 1}. {q.question}
               </p>
-              <div className="space-y-2">
+
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+              >
                 {q.options.map((option, oIndex) => {
                   const isSelected = selected[qIndex] === oIndex;
                   const isCorrect = q.correct === oIndex;
 
-                  let style =
-                    "bg-gray-800 text-gray-300 hover:bg-gray-700 border-gray-700";
+                  let styleObj: React.CSSProperties = {
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "10px 14px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--border)",
+                    background: "var(--surface2)",
+                    color: "var(--text)",
+                    fontSize: "14px",
+                    cursor: submitted ? "default" : "pointer",
+                    fontFamily: "inherit",
+                    transition: "all 0.15s",
+                    lineHeight: "1.5",
+                  };
+
                   if (submitted) {
                     if (isCorrect)
-                      style = "bg-green-900 text-green-300 border-green-700";
+                      styleObj = {
+                        ...styleObj,
+                        background: "var(--green-soft)",
+                        color: "var(--green)",
+                        borderColor: "var(--green)",
+                      };
                     else if (isSelected && !isCorrect)
-                      style = "bg-red-900 text-red-300 border-red-700";
-                    else style = "bg-gray-800 text-gray-500 border-gray-700";
+                      styleObj = {
+                        ...styleObj,
+                        background: "var(--red-soft)",
+                        color: "var(--red)",
+                        borderColor: "var(--red)",
+                      };
+                    else styleObj = { ...styleObj, opacity: 0.5 };
                   } else if (isSelected) {
-                    style = "bg-blue-700 text-white border-blue-500";
+                    styleObj = {
+                      ...styleObj,
+                      background: "var(--accent-soft)",
+                      color: "var(--accent)",
+                      borderColor: "var(--accent)",
+                    };
                   }
 
                   return (
                     <button
                       key={oIndex}
                       onClick={() => selectOption(qIndex, oIndex)}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-sm border transition-all ${style}`}
+                      style={styleObj}
                     >
                       {option}
                     </button>
@@ -114,16 +177,49 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
             <button
               onClick={() => setSubmitted(true)}
               disabled={Object.keys(selected).length < questions.length}
-              className="bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white px-6 py-3 rounded-lg text-sm font-medium transition-all"
+              style={{
+                padding: "11px 24px",
+                borderRadius: "8px",
+                border: "none",
+                background: "var(--green)",
+                color: "#fff",
+                fontSize: "14px",
+                fontWeight: 500,
+                cursor:
+                  Object.keys(selected).length < questions.length
+                    ? "not-allowed"
+                    : "pointer",
+                opacity:
+                  Object.keys(selected).length < questions.length ? 0.4 : 1,
+                fontFamily: "inherit",
+                transition: "opacity 0.15s",
+                alignSelf: "flex-start",
+              }}
             >
               Submit Quiz
             </button>
           ) : (
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 text-center">
-              <p className="text-2xl font-bold text-white mb-1">
+            <div
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                borderRadius: "12px",
+                padding: "28px",
+                textAlign: "center",
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: "Instrument Serif, serif",
+                  fontSize: "42px",
+                  fontWeight: 400,
+                  color: "var(--text)",
+                  marginBottom: "6px",
+                }}
+              >
                 {getScore()} / {questions.length}
               </p>
-              <p className="text-gray-400 text-sm">
+              <p style={{ fontSize: "14px", color: "var(--text-muted)" }}>
                 {getScore() === questions.length
                   ? "🎉 Perfect score!"
                   : getScore() >= questions.length / 2

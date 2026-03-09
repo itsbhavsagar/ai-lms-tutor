@@ -58,38 +58,87 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2">
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        flex: 1,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+          marginBottom: "16px",
+          paddingRight: "4px",
+        }}
+      >
         {messages.length === 0 && (
-          <div className="text-gray-500 text-sm mt-8 text-center">
-            Ask anything about {lesson.title} 👆
+          <div
+            style={{
+              textAlign: "center",
+              color: "var(--text-muted)",
+              fontSize: "14px",
+              marginTop: "48px",
+            }}
+          >
+            Ask anything about {lesson.title} ✦
           </div>
         )}
         {messages.map((msg, i) => (
           <div
             key={i}
-            className={`p-3 rounded-lg max-w-[75%] text-sm leading-relaxed ${
-              msg.role === "user"
-                ? "bg-blue-600 text-white ml-auto"
-                : "bg-gray-800 text-gray-100"
-            }`}
+            style={{
+              padding: "12px 16px",
+              borderRadius: "12px",
+              maxWidth: "72%",
+              fontSize: "14px",
+              lineHeight: "1.6",
+              alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
+              background:
+                msg.role === "user" ? "var(--accent)" : "var(--surface)",
+              color: msg.role === "user" ? "#fff" : "var(--text)",
+              border: msg.role === "user" ? "none" : "1px solid var(--border)",
+            }}
           >
             {msg.content}
           </div>
         ))}
         {loading && (
-          <div className="bg-gray-800 text-gray-400 p-3 rounded-lg max-w-[75%] text-sm">
+          <div
+            style={{
+              padding: "12px 16px",
+              borderRadius: "12px",
+              maxWidth: "72%",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              color: "var(--text-muted)",
+              fontSize: "14px",
+            }}
+          >
             Thinking...
           </div>
         )}
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div className="flex gap-2">
+      <div style={{ display: "flex", gap: "8px" }}>
         <input
-          className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          style={{
+            flex: 1,
+            padding: "12px 16px",
+            borderRadius: "10px",
+            border: "1px solid var(--border)",
+            background: "var(--surface)",
+            fontSize: "14px",
+            color: "var(--text)",
+            outline: "none",
+            fontFamily: "inherit",
+          }}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
@@ -98,7 +147,19 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
         <button
           onClick={sendMessage}
           disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg text-sm font-medium disabled:opacity-50 transition-all"
+          style={{
+            padding: "12px 20px",
+            borderRadius: "10px",
+            border: "none",
+            background: "var(--accent)",
+            color: "#fff",
+            fontSize: "14px",
+            fontWeight: 500,
+            cursor: "pointer",
+            opacity: loading ? 0.5 : 1,
+            fontFamily: "inherit",
+            transition: "opacity 0.15s",
+          }}
         >
           Send
         </button>
