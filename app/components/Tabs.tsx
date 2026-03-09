@@ -1,5 +1,5 @@
 "use client";
-export type TabType = "chat" | "quiz" | "summary" | "notes";
+export type TabType = "chat" | "quiz" | "summary" | "notes" | "rag";
 
 type Props = { activeTab: TabType; onChange: (tab: TabType) => void };
 
@@ -8,6 +8,7 @@ const tabs: { id: TabType; label: string }[] = [
   { id: "quiz", label: "📝 Quiz" },
   { id: "summary", label: "📄 Summary" },
   { id: "notes", label: "🗒️ Notes" },
+  { id: "rag", label: "⚡ RAG Chat" },
 ];
 
 export default function Tabs({ activeTab, onChange }: Props) {

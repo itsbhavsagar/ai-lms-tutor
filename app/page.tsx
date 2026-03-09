@@ -6,6 +6,7 @@ import ChatTab from "./components/ChatTab";
 import QuizTab from "./components/QuizTab";
 import SummaryTab from "./components/SummaryTab";
 import NotesTab from "./components/NotesTab";
+import RagTab from "./components/RagTab";
 
 export default function Home() {
   const [selectedLesson, setSelectedLesson] = useState<Lesson>(lessons[0]);
@@ -126,6 +127,7 @@ export default function Home() {
           {activeTab === "quiz" && <QuizTab lesson={selectedLesson} />}
           {activeTab === "summary" && <SummaryTab lesson={selectedLesson} />}
           {activeTab === "notes" && <NotesTab lesson={selectedLesson} />}
+          {activeTab === "rag" && <RagTab lesson={selectedLesson} />}
         </div>
       </main>
     </div>
