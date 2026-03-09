@@ -2,13 +2,8 @@ import Groq from "groq-sdk";
 
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-const lessonText = `
-  Photosynthesis is the process by which plants use sunlight, 
-  water and carbon dioxide to produce oxygen and energy in the form of sugar.
-`;
-
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages, lessonContent } = await req.json();
 
   const stream = await client.chat.completions.create({
     model: "llama-3.1-8b-instant",
@@ -19,10 +14,11 @@ export async function POST(req: Request) {
         content: `You are a helpful tutor for an LMS platform.
         Only answer questions based on this lesson content:
         
-        """${lessonText}"""
+        """${lessonContent}"""
         
         If the user asks anything outside this content, 
-        politely decline and redirect them to the lesson.`,
+        politely decline and redirect them to the lesson.
+        Keep answers concise and clear.`,
       },
       ...messages,
     ],
