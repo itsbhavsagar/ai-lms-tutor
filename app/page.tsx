@@ -124,9 +124,7 @@ export default function Home() {
         >
           {activeTab === "chat" && <ChatTab lesson={selectedLesson} />}
           {activeTab === "quiz" && <QuizTab lesson={selectedLesson} />}
-          {activeTab === "summary" && (
-            <SummaryTab lessonTitle={selectedLesson.title} />
-          )}
+          {activeTab === "summary" && <SummaryTab lesson={selectedLesson} />}
           {activeTab === "notes" && (
             <NotesTab lessonTitle={selectedLesson.title} />
           )}
