@@ -3,22 +3,29 @@ import { useState, useRef, useEffect } from "react";
 import { Lesson } from "../data/lessons";
 
 type Message = { role: "user" | "assistant"; content: string };
+type InputMode = "paste" | "pdf";
 
 export default function RagTab({ lesson }: { lesson: Lesson }) {
+  const [mode, setMode] = useState<InputMode>("paste");
   const [text, setText] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [indexed, setIndexed] = useState(false);
   const [indexing, setIndexing] = useState(false);
   const [chunksCreated, setChunksCreated] = useState(0);
+  const [pages, setPages] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setIndexed(false);
     setText("");
+    setFile(null);
     setMessages([]);
     setChunksCreated(0);
+    setPages(0);
   }, [lesson.id]);
 
   useEffect(() => {
@@ -26,17 +33,30 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
   }, [messages]);
 
   async function handleIndex() {
-    if (!text.trim()) return;
     setIndexing(true);
 
-    const res = await fetch("/api/embed", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, lessonId: lesson.id }),
-    });
+    if (mode === "paste") {
+      const res = await fetch("/api/embed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, lessonId: lesson.id }),
+      });
+      const data = await res.json();
+      setChunksCreated(data.chunksCreated);
+    } else if (mode === "pdf" && file) {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("lessonId", lesson.id);
 
-    const data = await res.json();
-    setChunksCreated(data.chunksCreated);
+      const res = await fetch("/api/upload-pdf", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      setChunksCreated(data.chunksCreated);
+      setPages(data.pages);
+    }
+
     setIndexed(true);
     setIndexing(false);
   }
@@ -55,10 +75,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
     const res = await fetch("/api/rag-chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: updatedMessages,
-        lessonId: lesson.id,
-      }),
+      body: JSON.stringify({ messages: updatedMessages, lessonId: lesson.id }),
     });
 
     const reader = res.body!.getReader();
@@ -79,6 +96,8 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
     setLoading(false);
   }
 
+  const canIndex = mode === "paste" ? text.trim().length > 0 : file !== null;
+
   return (
     <div
       style={{
@@ -89,7 +108,6 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
       }}
     >
       {!indexed ? (
-        // Upload Phase
         <div
           style={{
             display: "flex",
@@ -98,54 +116,129 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
             gap: "16px",
           }}
         >
-          <div>
-            <p
-              style={{
-                fontSize: "13px",
-                fontWeight: 600,
-                color: "var(--text)",
-                marginBottom: "6px",
-              }}
-            >
-              📄 Paste your lesson content
-            </p>
-            <p
-              style={{
-                fontSize: "12px",
-                color: "var(--text-muted)",
-                marginBottom: "12px",
-              }}
-            >
-              Paste any text — lecture notes, textbook content, articles. The AI
-              will chunk it, embed it, and answer questions from it
-              intelligently.
-            </p>
+          {/* Mode Toggle */}
+          <div style={{ display: "flex", gap: "8px" }}>
+            {(["paste", "pdf"] as InputMode[]).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                style={{
+                  padding: "7px 16px",
+                  borderRadius: "7px",
+                  border: "1px solid var(--border)",
+                  background: mode === m ? "var(--accent)" : "var(--surface)",
+                  color: mode === m ? "#fff" : "var(--text-muted)",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  transition: "all 0.15s",
+                }}
+              >
+                {m === "paste" ? "📋 Paste Text" : "📄 Upload PDF"}
+              </button>
+            ))}
           </div>
 
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Paste lesson content here..."
-            style={{
-              flex: 1,
-              padding: "16px",
-              borderRadius: "12px",
-              border: "1px solid var(--border)",
-              background: "var(--surface)",
-              color: "var(--text)",
-              fontSize: "14px",
-              lineHeight: "1.7",
-              fontFamily: "inherit",
-              resize: "none",
-              outline: "none",
-            }}
-            onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
-            onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
-          />
+          {/* Paste Mode */}
+          {mode === "paste" && (
+            <>
+              <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                Paste any text — lecture notes, textbook content, articles.
+              </p>
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="Paste lesson content here..."
+                style={{
+                  flex: 1,
+                  padding: "16px",
+                  borderRadius: "12px",
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
+                  color: "var(--text)",
+                  fontSize: "14px",
+                  lineHeight: "1.7",
+                  fontFamily: "inherit",
+                  resize: "none",
+                  outline: "none",
+                }}
+                onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
+                onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
+              />
+            </>
+          )}
 
+          {/* PDF Mode */}
+          {mode === "pdf" && (
+            <div
+              onClick={() => fileRef.current?.click()}
+              style={{
+                flex: 1,
+                border: "2px dashed var(--border)",
+                borderRadius: "12px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                gap: "12px",
+                background: file ? "var(--accent-soft)" : "var(--surface)",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.borderColor = "var(--accent)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.borderColor = "var(--border)")
+              }
+            >
+              <p style={{ fontSize: "32px" }}>📄</p>
+              {file ? (
+                <>
+                  <p
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "var(--accent)",
+                    }}
+                  >
+                    {file.name}
+                  </p>
+                  <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                    {(file.size / 1024).toFixed(1)} KB — click to change
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "var(--text)",
+                    }}
+                  >
+                    Click to upload a PDF
+                  </p>
+                  <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                    Lecture notes, textbooks, research papers
+                  </p>
+                </>
+              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".pdf"
+                style={{ display: "none" }}
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+              />
+            </div>
+          )}
+
+          {/* Index Button */}
           <button
             onClick={handleIndex}
-            disabled={!text.trim() || indexing}
+            disabled={!canIndex || indexing}
             style={{
               padding: "11px 24px",
               borderRadius: "8px",
@@ -154,17 +247,17 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
               color: "#fff",
               fontSize: "14px",
               fontWeight: 500,
-              cursor: !text.trim() ? "not-allowed" : "pointer",
-              opacity: !text.trim() || indexing ? 0.5 : 1,
+              cursor: !canIndex ? "not-allowed" : "pointer",
+              opacity: !canIndex || indexing ? 0.5 : 1,
               fontFamily: "inherit",
               alignSelf: "flex-start",
+              transition: "opacity 0.15s",
             }}
           >
             {indexing ? "Indexing..." : "⚡ Index & Enable RAG Chat"}
           </button>
         </div>
       ) : (
-        // Chat Phase
         <div
           style={{
             display: "flex",
@@ -173,7 +266,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
             overflow: "hidden",
           }}
         >
-          {/* Success banner */}
+          {/* Success Banner */}
           <div
             style={{
               background: "var(--green-soft)",
@@ -188,9 +281,15 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
               alignItems: "center",
             }}
           >
-            <span>✓ {chunksCreated} chunks indexed — RAG is active</span>
+            <span>
+              ✓ {chunksCreated} chunks indexed
+              {pages > 0 ? ` from ${pages} pages` : ""} — RAG is active
+            </span>
             <button
-              onClick={() => setIndexed(false)}
+              onClick={() => {
+                setIndexed(false);
+                setFile(null);
+              }}
               style={{
                 background: "transparent",
                 border: "none",
