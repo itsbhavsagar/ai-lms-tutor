@@ -23,24 +23,16 @@
   --blue-soft: #ddeaf5;
 }
 
-.page-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 12px 12px 24px;
-}
-
-.page-card {
-  border-radius: 18px;
-  background: var(--surface);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  overflow: hidden;
-}
-
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -52,11 +44,29 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Page wrapper */
+.page-container {
+  height: 100vh;
+  overflow: hidden;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px 12px 24px;
+}
+
+.page-card {
+  height: 100%;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
 /* Layout */
 .layout-root {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100%;
   background: transparent;
 }
 
@@ -69,6 +79,7 @@ body {
   flex-direction: column;
   gap: 4px;
   flex-shrink: 0;
+  overflow-y: auto;
 }
 
 .layout-main {
@@ -91,6 +102,7 @@ body {
   flex-wrap: wrap;
 }
 
+/* Desktop */
 @media (min-width: 768px) {
   .page-container {
     padding: 24px 24px 32px;
@@ -125,6 +137,7 @@ body {
   }
 }
 
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }
