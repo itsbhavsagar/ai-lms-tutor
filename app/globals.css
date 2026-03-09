@@ -23,6 +23,20 @@
   --blue-soft: #ddeaf5;
 }
 
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px 12px 24px;
+}
+
+.page-card {
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -43,7 +57,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: var(--bg);
+  background: transparent;
 }
 
 .layout-sidebar {
@@ -78,6 +92,14 @@ body {
 }
 
 @media (min-width: 768px) {
+  .page-container {
+    padding: 24px 24px 32px;
+  }
+
+  .page-card {
+    border-radius: 22px;
+  }
+
   .layout-root {
     flex-direction: row;
   }

@@ -18,103 +18,101 @@ export default function Home() {
   }
 
   return (
-    <div className="layout-root">
-      {/* Sidebar */}
-      <aside
-        className="layout-sidebar"
-      >
-        <p
-          style={{
-            fontSize: "11px",
-            fontWeight: 600,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "var(--text-muted)",
-            padding: "0 12px",
-            marginBottom: "12px",
-          }}
-        >
-          Lessons
-        </p>
-        {lessons.map((lesson) => (
-          <button
-            key={lesson.id}
-            onClick={() => selectLesson(lesson)}
+    <div className="page-container">
+      <div className="page-card layout-root">
+        {/* Sidebar */}
+        <aside className="layout-sidebar">
+          <p
             style={{
-              textAlign: "left",
-              padding: "10px 12px",
-              borderRadius: "8px",
-              border: "none",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: selectedLesson.id === lesson.id ? 600 : 400,
-              background:
-                selectedLesson.id === lesson.id
-                  ? "var(--accent-soft)"
-                  : "transparent",
-              color:
-                selectedLesson.id === lesson.id
-                  ? "var(--accent)"
-                  : "var(--text)",
-              transition: "all 0.15s ease",
-              fontFamily: "inherit",
-            }}
-            onMouseEnter={(e) => {
-              if (selectedLesson.id !== lesson.id)
-                (e.target as HTMLElement).style.background = "var(--surface2)";
-            }}
-            onMouseLeave={(e) => {
-              if (selectedLesson.id !== lesson.id)
-                (e.target as HTMLElement).style.background = "transparent";
+              fontSize: "11px",
+              fontWeight: 600,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "var(--text-muted)",
+              padding: "0 12px",
+              marginBottom: "12px",
             }}
           >
-            {lesson.title}
-          </button>
-        ))}
-      </aside>
-
-      {/* Main */}
-      <main
-        className="layout-main"
-      >
-        {/* Header */}
-        <div className="layout-main-header">
-          <h1
-            style={{
-              fontFamily: "Instrument Serif, serif",
-              fontSize: "28px",
-              fontWeight: 400,
-              color: "var(--text)",
-              marginBottom: "4px",
-            }}
-          >
-            {selectedLesson.title}
-          </h1>
-          <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-            AI-powered learning — ask questions, take quizzes, and review
-            summaries
+            Lessons
           </p>
-        </div>
+          {lessons.map((lesson) => (
+            <button
+              key={lesson.id}
+              onClick={() => selectLesson(lesson)}
+              style={{
+                textAlign: "left",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: selectedLesson.id === lesson.id ? 600 : 400,
+                background:
+                  selectedLesson.id === lesson.id
+                    ? "var(--accent-soft)"
+                    : "transparent",
+                color:
+                  selectedLesson.id === lesson.id
+                    ? "var(--accent)"
+                    : "var(--text)",
+                transition: "all 0.15s ease",
+                fontFamily: "inherit",
+              }}
+              onMouseEnter={(e) => {
+                if (selectedLesson.id !== lesson.id)
+                  (e.target as HTMLElement).style.background = "var(--surface2)";
+              }}
+              onMouseLeave={(e) => {
+                if (selectedLesson.id !== lesson.id)
+                  (e.target as HTMLElement).style.background = "transparent";
+              }}
+            >
+              {lesson.title}
+            </button>
+          ))}
+        </aside>
 
-        {/* Tabs */}
-        <Tabs activeTab={activeTab} onChange={setActiveTab} />
+        {/* Main */}
+        <main className="layout-main">
+          {/* Header */}
+          <div className="layout-main-header">
+            <h1
+              style={{
+                fontFamily: "Instrument Serif, serif",
+                fontSize: "28px",
+                fontWeight: 400,
+                color: "var(--text)",
+                marginBottom: "4px",
+              }}
+            >
+              {selectedLesson.title}
+            </h1>
+            <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+              AI-powered learning — ask questions, take quizzes, and review
+              summaries
+            </p>
+          </div>
 
-        {/* Content */}
-        <div
-          style={{
-            flex: 1,
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          {activeTab === "chat" && <ChatTab lesson={selectedLesson} />}
-          {activeTab === "quiz" && <QuizTab lesson={selectedLesson} />}
-          {activeTab === "summary" && <SummaryTab lesson={selectedLesson} />}
-          {activeTab === "notes" && <NotesTab lesson={selectedLesson} />}
-          {activeTab === "rag" && <RagTab lesson={selectedLesson} />}
-        </div>
-      </main>
+          {/* Tabs */}
+          <Tabs activeTab={activeTab} onChange={setActiveTab} />
+
+          {/* Content */}
+          <div
+            style={{
+              flex: 1,
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {activeTab === "chat" && <ChatTab lesson={selectedLesson} />}
+            {activeTab === "quiz" && <QuizTab lesson={selectedLesson} />}
+            {activeTab === "summary" && <SummaryTab lesson={selectedLesson} />}
+            {activeTab === "notes" && <NotesTab lesson={selectedLesson} />}
+            {activeTab === "rag" && <RagTab lesson={selectedLesson} />}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
