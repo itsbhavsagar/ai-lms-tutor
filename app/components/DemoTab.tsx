@@ -1,6 +1,6 @@
 {
-  /* 
-    1 - CREATE A CHAT UI 
+  /*
+    1 - CREATE A CHAT UI
     2 - STAREAM THE RESPONSE FORM THE AI - [ CAN I GROK ]
     */
 }
@@ -25,13 +25,10 @@ const DemoTab = (): JSX.Element => {
 
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
-    const res = await fetch("/api/chat", {
+    const res = await fetch("/api/demo-chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: updatedMessages,
-        lessonContent: "You are a helpful assistant.",
-      }),
+      body: JSON.stringify({ messages: updatedMessages }),
     });
 
     const reader = res.body!.getReader();
