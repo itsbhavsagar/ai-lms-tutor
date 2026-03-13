@@ -1,5 +1,5 @@
 "use client";
-export type TabType = "chat" | "quiz" | "summary" | "notes" | "rag";
+export type TabType = "chat" | "quiz" | "summary" | "notes" | "rag" | "demo";
 
 type Props = { activeTab: TabType; onChange: (tab: TabType) => void };
 
@@ -9,13 +9,12 @@ const tabs: { id: TabType; label: string }[] = [
   { id: "summary", label: "📄 Summary" },
   { id: "notes", label: "🗒️ Notes" },
   { id: "rag", label: "⚡ RAG Chat" },
+  { id: "demo", label: "⚡ Demo Chat" },
 ];
 
 export default function Tabs({ activeTab, onChange }: Props) {
   return (
-    <div
-      className="tabs-container"
-    >
+    <div className="tabs-container">
       {tabs.map((tab) => (
         <button
           key={tab.id}
