@@ -19,7 +19,6 @@ export async function POST(req: Request) {
       return Response.json({ error: "No audio file" }, { status: 400 });
     }
 
-    // Normalize mime type / extension for Groq Whisper
     const mimeToExt: Record<string, string> = {
       "audio/webm": "webm",
       "audio/webm;codecs=opus": "webm",

@@ -1,144 +1,183 @@
+"use client";
+
 {
   /*
     1 - CREATE A CHAT UI
-    2 - STAREAM THE RESPONSE FORM THE AI - [ CAN I GROK ]
+    2 - STAREAM THE RESPONSE FORM THE AI - [ GROQ ]
     */
 }
 
-import { JSX, useState } from "react";
+import { JSX, useRef, useEffect, useState } from "react";
+import type { ChatMessage } from "../types/chat";
+import { RiSendPlane2Line, RiPlayCircleLine } from "react-icons/ri";
 
-type Message = { role: "user" | "assistant"; content: string };
+const BADGE_TEXT = "Live Chat — streaming chat powered by Groq";
+const EMPTY_HEADING = "Ask me anything";
+const EMPTY_SUBTEXT =
+  "Built with Next.js App Router + Groq llama-3.1-8b-instant";
+const PLACEHOLDER = "Ask something…";
+const LABEL_SEND = "Send";
 
 const DemoTab = (): JSX.Element => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   async function sendMessage(): Promise<void> {
     if (!input.trim() || loading) return;
-
-    const userMessage: Message = { role: "user", content: input };
-    const updatedMessages: Message[] = [...messages, userMessage];
-    setMessages(updatedMessages);
+    const userMsg: ChatMessage = { role: "user", content: input };
+    const history = [...messages, userMsg];
+    setMessages(history);
     setInput("");
     setLoading(true);
-
-    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+    setMessages((p) => [...p, { role: "assistant", content: "" }]);
 
     const res = await fetch("/api/demo-chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: updatedMessages }),
+      body: JSON.stringify({ messages: history }),
     });
 
     const reader = res.body!.getReader();
     const decoder = new TextDecoder();
-    let buffer: string = "";
-
+    let buffer = "";
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
-      setMessages((prev: Message[]) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          ...updated[updated.length - 1],
-          content: buffer,
-        };
-        return [...updated];
+      setMessages((p: ChatMessage[]) => {
+        const u = [...p];
+        u[u.length - 1] = { ...u[u.length - 1], content: buffer };
+        return [...u];
       });
     }
-
     setLoading(false);
   }
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        padding: "20px",
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-          marginBottom: "16px",
-        }}
-      >
-        {messages.length === 0 && (
-          <div
-            style={{ color: "#888", textAlign: "center", marginTop: "48px" }}
-          >
-            Ask me anything ✦
-          </div>
-        )}
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            style={{
-              padding: "12px 16px",
-              borderRadius: "12px",
-              maxWidth: "70%",
-              alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-              background: msg.role === "user" ? "#6366f1" : "#1e1e2e",
-              color: "#fff",
-              fontSize: "14px",
-              lineHeight: "1.6",
-            }}
-          >
-            {msg.content}
-          </div>
-        ))}
-        {loading && (
-          <div style={{ color: "#888", fontSize: "14px" }}>Thinking...</div>
-        )}
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="mb-3 flex flex-none items-center gap-2">
+        <span
+          className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold"
+          style={{ background: "var(--accent-soft)", color: "var(--accent)" }}
+        >
+          <RiPlayCircleLine size={12} />
+          {BADGE_TEXT}
+        </span>
       </div>
 
-      <div style={{ display: "flex", gap: "8px" }}>
-        <input
-          style={{
-            flex: 1,
-            padding: "12px",
-            borderRadius: "8px",
-            border: "1px solid #333",
-            background: "#1e1e2e",
-            color: "#fff",
-            fontSize: "14px",
-            outline: "none",
-          }}
-          value={input}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setInput(e.target.value)
-          }
-          onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) =>
-            e.key === "Enter" && sendMessage()
-          }
-          placeholder="Ask something..."
-        />
-        <button
-          onClick={sendMessage}
-          disabled={loading}
-          style={{
-            padding: "12px 20px",
-            borderRadius: "8px",
-            background: "#6366f1",
-            color: "#fff",
-            border: "none",
-            cursor: loading ? "not-allowed" : "pointer",
-            opacity: loading ? 0.5 : 1,
-            fontSize: "14px",
-            fontWeight: 500,
-          }}
-        >
-          Send
-        </button>
+      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+        <div className="flex flex-col gap-3 pb-2">
+          {messages.length === 0 && (
+            <div
+              className="mt-16 flex flex-col items-center gap-3 text-center"
+              style={{ color: "var(--text-muted)" }}
+            >
+              <RiPlayCircleLine size={32} style={{ opacity: 0.35 }} />
+              <p
+                className="text-[13px] font-medium"
+                style={{ color: "var(--text)" }}
+              >
+                {EMPTY_HEADING}
+              </p>
+              <p
+                className="text-[11px]"
+                style={{ color: "var(--text-muted)", opacity: 0.7 }}
+              >
+                {EMPTY_SUBTEXT}
+              </p>
+            </div>
+          )}
+
+          {messages.map((msg, i) => (
+            <div
+              key={i}
+              className="msg-in flex"
+              style={{
+                justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+              }}
+            >
+              {msg.role === "assistant" && (
+                <div
+                  className="mr-2 mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                  style={{ background: "var(--accent)" }}
+                >
+                  A
+                </div>
+              )}
+              <div
+                className="max-w-[72%] rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed"
+                style={
+                  msg.role === "user"
+                    ? {
+                        background: "var(--text)",
+                        color: "#fff",
+                        borderBottomRightRadius: 4,
+                      }
+                    : {
+                        background: "var(--accent-soft)",
+                        color: "var(--text)",
+                        border: "1px solid var(--accent-border)",
+                        borderBottomLeftRadius: 4,
+                      }
+                }
+              >
+                {msg.content === "" ? (
+                  <span className="flex items-center gap-1 py-0.5">
+                    <span className="dot dot-1" />
+                    <span className="dot dot-2" />
+                    <span className="dot dot-3" />
+                  </span>
+                ) : (
+                  msg.content
+                )}
+              </div>
+            </div>
+          ))}
+          <div ref={bottomRef} />
+        </div>
+      </div>
+
+      <div
+        className="flex-none border-t pt-4"
+        style={{ borderColor: "var(--border)" }}
+      >
+        <div className="flex items-center gap-2">
+          <input
+            className="flex-1 rounded-xl border px-4 py-2.5 text-[13px] outline-none"
+            style={{
+              border: "1px solid var(--border-strong)",
+              background: "var(--bg)",
+              color: "var(--text)",
+            }}
+            value={input}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setInput(e.target.value)
+            }
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) =>
+              e.key === "Enter" && sendMessage()
+            }
+            placeholder={PLACEHOLDER}
+          />
+          <button
+            onClick={sendMessage}
+            disabled={loading || !input.trim()}
+            className="flex h-10 items-center gap-1.5 rounded-xl px-4 text-[13px] font-semibold text-white transition-opacity"
+            style={{
+              background: "var(--accent)",
+              opacity: loading || !input.trim() ? 0.45 : 1,
+              cursor: loading || !input.trim() ? "not-allowed" : "pointer",
+            }}
+          >
+            <RiSendPlane2Line size={14} />
+            {LABEL_SEND}
+          </button>
+        </div>
       </div>
     </div>
   );

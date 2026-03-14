@@ -1,44 +1,67 @@
 "use client";
-export type TabType = "chat" | "quiz" | "summary" | "notes" | "rag" | "demo";
+import {
+  RiChatSmile2Line,
+  RiFileTextLine,
+  RiSparkling2Line,
+  RiStickyNoteLine,
+  RiFlashlightLine,
+  RiPlayCircleLine,
+} from "react-icons/ri";
 
-type Props = { activeTab: TabType; onChange: (tab: TabType) => void };
+export type TabType =
+  | "chat"
+  | "quiz"
+  | "summary"
+  | "notes"
+  | "rag"
+  | "live-chat";
 
-const tabs: { id: TabType; label: string }[] = [
-  { id: "chat", label: "💬 Chat" },
-  { id: "quiz", label: "📝 Quiz" },
-  { id: "summary", label: "📄 Summary" },
-  { id: "notes", label: "🗒️ Notes" },
-  { id: "rag", label: "⚡ RAG Chat" },
-  { id: "demo", label: "⚡ Demo Chat" },
+type TabDef = {
+  id: TabType;
+  label: string;
+  Icon: React.ComponentType<{ size?: number; color?: string }>;
+};
+
+const TABS: TabDef[] = [
+  { id: "chat", label: "Chat", Icon: RiChatSmile2Line },
+  { id: "quiz", label: "Quiz", Icon: RiFileTextLine },
+  { id: "summary", label: "Summary", Icon: RiSparkling2Line },
+  { id: "notes", label: "Notes", Icon: RiStickyNoteLine },
+  { id: "rag", label: "RAG Chat", Icon: RiFlashlightLine },
+  { id: "live-chat", label: "Live Chat", Icon: RiPlayCircleLine },
 ];
+
+type Props = {
+  activeTab: TabType;
+  onChange: (tab: TabType) => void;
+};
 
 export default function Tabs({ activeTab, onChange }: Props) {
   return (
-    <div className="tabs-container">
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          onClick={() => onChange(tab.id)}
-          style={{
-            padding: "8px 16px",
-            fontSize: "13px",
-            fontWeight: activeTab === tab.id ? 600 : 400,
-            color: activeTab === tab.id ? "var(--accent)" : "var(--text-muted)",
-            background: "transparent",
-            border: "none",
-            borderBottom:
-              activeTab === tab.id
-                ? "2px solid var(--accent)"
-                : "2px solid transparent",
-            marginBottom: "-1px",
-            cursor: "pointer",
-            transition: "all 0.15s ease",
-            fontFamily: "inherit",
-          }}
-        >
-          {tab.label}
-        </button>
-      ))}
+    <div className="flex items-center gap-1">
+      {TABS.map(({ id, label, Icon }) => {
+        const active = activeTab === id;
+        return (
+          <button
+            key={id}
+            onClick={() => onChange(id)}
+            className="relative flex items-center gap-1.5 px-3 py-3 text-[13px] font-medium whitespace-nowrap transition-colors duration-150"
+            style={{ color: active ? "var(--text)" : "var(--text-muted)" }}
+          >
+            <Icon size={14} />
+            <span>{label}</span>
+            <span
+              className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t-full"
+              style={{
+                background: active ? "var(--accent)" : "transparent",
+                transform: active ? "scaleX(1)" : "scaleX(0)",
+                transition: "transform 0.18s ease",
+                transformOrigin: "center",
+              }}
+            />
+          </button>
+        );
+      })}
     </div>
   );
 }

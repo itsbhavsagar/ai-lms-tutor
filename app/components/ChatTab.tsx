@@ -1,15 +1,27 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { Lesson } from "../data/lessons";
+import type { ChatMessage } from "../types/chat";
+import {
+  RiSendPlane2Line,
+  RiMicLine,
+  RiStopCircleLine,
+  RiChatSmile2Line,
+} from "react-icons/ri";
 
-type Message = { role: "user" | "assistant"; content: string };
+const PLACEHOLDER_SUFFIX = "…";
+const SEND_LABEL = "Send";
+const TRANSCRIBING_LABEL = "Transcribing…";
+const RECORDING_LABEL = "Recording — release to stop";
+const MIC_DENIED_MSG = "Microphone access denied.";
 
 export default function ChatTab({ lesson }: { lesson: Lesson }) {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -18,7 +30,6 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     setMessages([]);
     setInput("");
   }, [lesson.id]);
-
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -26,33 +37,25 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      // Try wav first, fallback to webm
       const mimeType = MediaRecorder.isTypeSupported("audio/wav")
         ? "audio/wav"
         : MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
           ? "audio/webm;codecs=opus"
           : "audio/webm";
-
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
-      mediaRecorderRef.current = mediaRecorder;
+      const mr = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mr;
       chunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (e) => {
+      mr.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
-
-      mediaRecorder.onstop = async () => {
+      mr.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        await transcribeAudio(blob);
+        await transcribeAudio(new Blob(chunksRef.current, { type: mimeType }));
       };
-
-      mediaRecorder.start();
+      mr.start();
       setRecording(true);
-    } catch (err) {
-      console.error("Mic error:", err);
-      alert("Microphone access denied.");
+    } catch {
+      alert(MIC_DENIED_MSG);
     }
   }
 
@@ -66,19 +69,16 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
 
   async function transcribeAudio(blob: Blob) {
     try {
-      const formData = new FormData();
-      const ext = blob.type.includes("wav") ? "wav" : "webm";
-      formData.append("audio", blob, `recording.${ext}`);
-
-      const res = await fetch("/api/transcribe", {
-        method: "POST",
-        body: formData,
-      });
-
+      const fd = new FormData();
+      fd.append(
+        "audio",
+        blob,
+        `recording.${blob.type.includes("wav") ? "wav" : "webm"}`,
+      );
+      const res = await fetch("/api/transcribe", { method: "POST", body: fd });
       const data = await res.json();
       if (data.text) setInput(data.text);
-    } catch (err) {
-      console.error("Transcription failed:", err);
+    } catch {
     } finally {
       setTranscribing(false);
     }
@@ -86,20 +86,18 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
 
   async function sendMessage() {
     if (!input.trim() || loading) return;
-
-    const userMessage: Message = { role: "user", content: input };
-    const updatedMessages = [...messages, userMessage];
-    setMessages(updatedMessages);
+    const userMsg: ChatMessage = { role: "user", content: input };
+    const history = [...messages, userMsg];
+    setMessages(history);
     setInput("");
     setLoading(true);
-
-    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+    setMessages((p) => [...p, { role: "assistant", content: "" }]);
 
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        messages: updatedMessages,
+        messages: history,
         lessonContent: lesson.content,
       }),
     });
@@ -107,174 +105,159 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     const reader = res.body!.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
-
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1].content = buffer;
-        return [...updated];
+      setMessages((p) => {
+        const u = [...p];
+        u[u.length - 1] = { ...u[u.length - 1], content: buffer };
+        return [...u];
       });
     }
-
     setLoading(false);
   }
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        flex: 1,
-        overflow: "hidden",
-      }}
-    >
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+        <div className="flex flex-col gap-3 pb-2">
+          {messages.length === 0 && (
+            <div
+              className="mt-16 flex flex-col items-center gap-3 text-center"
+              style={{ color: "var(--text-muted)" }}
+            >
+              <RiChatSmile2Line size={32} style={{ opacity: 0.4 }} />
+              <p className="text-[13px]">
+                Ask anything about{" "}
+                <span className="font-medium" style={{ color: "var(--text)" }}>
+                  {lesson.title}
+                </span>
+              </p>
+            </div>
+          )}
+
+          {messages.map((msg, i) => (
+            <div
+              key={i}
+              className="msg-in flex"
+              style={{
+                justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+              }}
+            >
+              {msg.role === "assistant" && (
+                <div
+                  className="mr-2 mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                  style={{ background: "var(--accent)" }}
+                >
+                  A
+                </div>
+              )}
+              <div
+                className="max-w-[72%] rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed"
+                style={
+                  msg.role === "user"
+                    ? {
+                        background: "var(--text)",
+                        color: "#fff",
+                        borderBottomRightRadius: 4,
+                      }
+                    : {
+                        background: "var(--accent-soft)",
+                        color: "var(--text)",
+                        border: "1px solid var(--accent-border)",
+                        borderBottomLeftRadius: 4,
+                      }
+                }
+              >
+                {msg.content === "" ? (
+                  <span className="flex items-center gap-1 py-0.5">
+                    <span className="dot dot-1" />
+                    <span className="dot dot-2" />
+                    <span className="dot dot-3" />
+                  </span>
+                ) : (
+                  msg.content
+                )}
+              </div>
+            </div>
+          ))}
+          <div ref={bottomRef} />
+        </div>
+      </div>
+
       <div
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-          marginBottom: "16px",
-          paddingRight: "4px",
-        }}
+        className="flex-none border-t pt-4"
+        style={{ borderColor: "var(--border)" }}
       >
-        {messages.length === 0 && (
-          <div
-            style={{
-              textAlign: "center",
-              color: "var(--text-muted)",
-              fontSize: "14px",
-              marginTop: "48px",
-            }}
+        {recording && (
+          <p
+            className="mb-2 flex items-center gap-1.5 text-[12px]"
+            style={{ color: "var(--red)" }}
           >
-            Ask anything about {lesson.title} ✦
-          </div>
+            <span
+              className="rec-pulse inline-block h-2 w-2 rounded-full"
+              style={{ background: "var(--red)" }}
+            />
+            {RECORDING_LABEL}
+          </p>
         )}
-        {messages.map((msg, i) => (
-          <div
-            key={i}
+
+        <div className="flex items-center gap-2">
+          <input
+            className="flex-1 rounded-xl border px-4 py-2.5 text-[13px] outline-none transition-colors"
             style={{
-              padding: "12px 16px",
-              borderRadius: "12px",
-              maxWidth: "72%",
-              fontSize: "14px",
-              lineHeight: "1.6",
-              alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-              background:
-                msg.role === "user" ? "var(--accent)" : "var(--surface)",
-              color: msg.role === "user" ? "#fff" : "var(--text)",
-              border: msg.role === "user" ? "none" : "1px solid var(--border)",
+              border: "1px solid var(--border-strong)",
+              background: "var(--bg)",
+              color: "var(--text)",
+            }}
+            value={transcribing ? TRANSCRIBING_LABEL : input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            placeholder={`Ask about ${lesson.title}${PLACEHOLDER_SUFFIX}`}
+            disabled={transcribing}
+          />
+
+          <button
+            onMouseDown={startRecording}
+            onMouseUp={stopRecording}
+            onTouchStart={startRecording}
+            onTouchEnd={stopRecording}
+            disabled={transcribing}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all"
+            style={{
+              background: recording ? "var(--red-soft)" : "var(--bg)",
+              border: `1px solid ${recording ? "var(--red-border)" : "var(--border-strong)"}`,
+              color: recording ? "var(--red)" : "var(--text-muted)",
+              opacity: transcribing ? 0.5 : 1,
+              cursor: transcribing ? "not-allowed" : "pointer",
             }}
           >
-            {msg.content}
-          </div>
-        ))}
-        {loading && (
-          <div
+            {recording ? (
+              <RiStopCircleLine size={16} />
+            ) : (
+              <RiMicLine size={16} />
+            )}
+          </button>
+
+          <button
+            onClick={sendMessage}
+            disabled={loading || transcribing || !input.trim()}
+            className="flex h-10 items-center gap-1.5 rounded-xl px-4 text-[13px] font-semibold text-white transition-opacity"
             style={{
-              padding: "12px 16px",
-              borderRadius: "12px",
-              maxWidth: "72%",
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              color: "var(--text-muted)",
-              fontSize: "14px",
+              background: "var(--accent)",
+              opacity: loading || transcribing || !input.trim() ? 0.45 : 1,
+              cursor:
+                loading || transcribing || !input.trim()
+                  ? "not-allowed"
+                  : "pointer",
             }}
           >
-            Thinking...
-          </div>
-        )}
-        <div ref={bottomRef} />
+            <RiSendPlane2Line size={14} />
+            {SEND_LABEL}
+          </button>
+        </div>
       </div>
-
-      {/* Input Row */}
-      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-        <input
-          style={{
-            flex: 1,
-            padding: "12px 16px",
-            borderRadius: "10px",
-            border: "1px solid var(--border)",
-            background: "var(--surface)",
-            fontSize: "14px",
-            color: "var(--text)",
-            outline: "none",
-            fontFamily: "inherit",
-          }}
-          value={transcribing ? "Transcribing..." : input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          placeholder={`Ask about ${lesson.title}...`}
-          disabled={transcribing}
-        />
-
-        {/* Mic Button */}
-        <button
-          onMouseDown={startRecording}
-          onMouseUp={stopRecording}
-          onTouchStart={startRecording}
-          onTouchEnd={stopRecording}
-          disabled={transcribing}
-          title="Hold to record"
-          style={{
-            width: "44px",
-            height: "44px",
-            borderRadius: "10px",
-            border: "1px solid var(--border)",
-            background: recording ? "var(--red-soft)" : "var(--surface)",
-            color: recording ? "var(--red)" : "var(--text-muted)",
-            fontSize: "18px",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "all 0.15s",
-            flexShrink: 0,
-            opacity: transcribing ? 0.5 : 1,
-          }}
-        >
-          {recording ? "⏹" : "🎙️"}
-        </button>
-
-        {/* Send Button */}
-        <button
-          onClick={sendMessage}
-          disabled={loading || transcribing}
-          style={{
-            padding: "12px 20px",
-            borderRadius: "10px",
-            border: "none",
-            background: "var(--accent)",
-            color: "#fff",
-            fontSize: "14px",
-            fontWeight: 500,
-            cursor: "pointer",
-            opacity: loading || transcribing ? 0.5 : 1,
-            fontFamily: "inherit",
-            transition: "opacity 0.15s",
-          }}
-        >
-          Send
-        </button>
-      </div>
-
-      {/* Recording indicator */}
-      {recording && (
-        <p
-          style={{
-            fontSize: "12px",
-            color: "var(--red)",
-            marginTop: "8px",
-            textAlign: "center",
-          }}
-        >
-          🔴 Recording... release to stop
-        </p>
-      )}
     </div>
   );
 }
