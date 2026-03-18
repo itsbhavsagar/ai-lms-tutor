@@ -73,12 +73,9 @@ export default function Home() {
                   className="w-full rounded-lg px-3 py-2 text-left text-[13px] font-medium transition-all duration-150"
                   style={{
                     background: active
-                      ? "var(--bg-sidebar-active)"
+                      ? "rgba(255,255,255,0.06)"
                       : "transparent",
-                    color: active
-                      ? "var(--text-sidebar-active)"
-                      : "var(--text-sidebar)",
-                    borderLeft: `2px solid ${active ? "var(--accent)" : "transparent"}`,
+                    color: active ? "#fff" : "var(--text-sidebar)",
                   }}
                 >
                   {lesson.title}
