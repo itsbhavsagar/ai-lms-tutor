@@ -1,8 +1,3 @@
-/**
- * Request Validation
- * Type-safe validation for API inputs
- */
-
 export class ValidationError extends Error {
   constructor(message: string) {
     super(message);
@@ -10,9 +5,6 @@ export class ValidationError extends Error {
   }
 }
 
-/**
- * Validate chat request
- */
 export function validateChatRequest(body: unknown): {
   message: string;
   sessionId: string;
@@ -41,9 +33,6 @@ export function validateChatRequest(body: unknown): {
   };
 }
 
-/**
- * Validate PDF upload request
- */
 export function validatePdfUpload(formData: FormData): {
   file: File;
   userId: string;
@@ -81,9 +70,6 @@ export function validatePdfUpload(formData: FormData): {
   };
 }
 
-/**
- * Validate session creation
- */
 export function validateSessionRequest(body: unknown): {
   userId: string;
   lessonId: string;

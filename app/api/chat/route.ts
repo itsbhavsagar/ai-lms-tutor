@@ -7,7 +7,6 @@ import {
 
 export async function POST(req: Request) {
   try {
-    // 1. Apply rate limiting
     const rateLimitResult = RATE_LIMITS.chat(req);
     if (!rateLimitResult.allowed) {
       return createRateLimitResponse(
@@ -16,10 +15,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Validate input
     const body = await req.json();
 
-    // Support both formats (frontend + legacy)
     let message = body.message;
 
     if (!message && Array.isArray(body.messages)) {
@@ -37,50 +34,69 @@ export async function POST(req: Request) {
     const lessonContent = (body as any).lessonContent || "";
     const useRag = (body as any).useRag !== false;
 
-    const chatResponse = await chatWithContext(
-      sessionId,
-      userMessage,
-      lessonContent,
-      {
-        useRag,
-      },
-    );
+    try {
+      const chatResponse = await chatWithContext(
+        sessionId,
+        userMessage,
+        lessonContent,
+        {
+          useRag,
+        },
+      );
 
-    const encoder = new TextEncoder();
-    let fullResponse = "";
+      const encoder = new TextEncoder();
+      let fullResponse = "";
 
-    const readable = new ReadableStream({
-      async start(controller) {
-        try {
-          const reader = chatResponse.stream.getReader();
+      const readable = new ReadableStream({
+        async start(controller) {
+          try {
+            const reader = chatResponse.stream.getReader();
 
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
 
-            const text = new TextDecoder().decode(value);
-            fullResponse += text;
-            controller.enqueue(encoder.encode(text));
+              const text = new TextDecoder().decode(value);
+              fullResponse += text;
+              controller.enqueue(encoder.encode(text));
+            }
+
+            controller.close();
+
+            await chatResponse.onFinish();
+          } catch (error) {
+            console.error("Streaming error:", error);
+            controller.error(error);
           }
+        },
+      });
 
-          controller.close();
+      return new Response(readable, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      });
+    } catch (error) {
+      console.error("Chat error:", error);
 
-          await chatResponse.onFinish();
-        } catch (error) {
-          console.error("Streaming error:", error);
-          controller.error(error);
-        }
-      },
-    });
+      if (
+        error instanceof Error &&
+        error.message.includes("Session") &&
+        error.message.includes("not found")
+      ) {
+        return Response.json(
+          { error: `Session ${sessionId} not found` },
+          { status: 404 },
+        );
+      }
 
-    return new Response(readable, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-        "X-RateLimit-Remaining": String(rateLimitResult.remaining),
-      },
-    });
+      return Response.json(
+        { error: error instanceof Error ? error.message : "Internal error" },
+        { status: 500 },
+      );
+    }
   } catch (error) {
     console.error("Chat API error:", error);
 

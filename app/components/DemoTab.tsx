@@ -1,12 +1,5 @@
 "use client";
 
-{
-  /*
-    1 - CREATE A CHAT UI
-    2 - STAREAM THE RESPONSE FORM THE AI - [ GROQ ]
-    */
-}
-
 import { JSX, useRef, useEffect, useState } from "react";
 import type { ChatMessage } from "../types/chat";
 import { RiSendPlane2Line, RiPlayCircleLine } from "react-icons/ri";

@@ -1,8 +1,3 @@
-/**
- * PDF Processing Utilities
- * Handles extraction and text parsing from PDFs
- */
-
 export async function extractTextFromPDF(buffer: ArrayBuffer): Promise<string> {
   return new Promise((resolve, reject) => {
     const PDFParser = require("pdf2json");

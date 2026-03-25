@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Lesson } from "../data/lessons";
 import { RiPencilLine, RiSaveLine, RiStickyNoteLine } from "react-icons/ri";
+import { getOrCreateUserId } from "@/lib/utils/localStorage";
 
 const LABEL_SAVE = "Save Notes";
 const LABEL_EDIT = "Edit";
@@ -12,21 +13,68 @@ const PLACEHOLDER_SUFFIX =
   " here…\n\nTip: Summarize key points in your own words — it helps you remember better.";
 
 export default function NotesTab({ lesson }: { lesson: Lesson }) {
-  const [notes, setNotes] = useState<Record<string, string>>({});
-  const [locked, setLocked] = useState<Record<string, boolean>>({});
+  const [content, setContent] = useState("");
+  const [locked, setLocked] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const currentNote = notes[lesson.id] ?? "";
-  const isLocked = locked[lesson.id] ?? false;
-  const wordCount = currentNote.trim()
-    ? currentNote.trim().split(/\s+/).length
-    : 0;
+  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
 
-  function handleSave() {
-    if (currentNote.trim()) setLocked((p) => ({ ...p, [lesson.id]: true }));
+  // Load notes on component mount or lesson change
+  useEffect(() => {
+    loadNotes();
+  }, [lesson.id]);
+
+  async function loadNotes() {
+    try {
+      setLoading(true);
+      const userId = getOrCreateUserId();
+      const response = await fetch(
+        `/api/notes?userId=${userId}&lessonId=${lesson.id}`,
+      );
+      const data = await response.json();
+      if (data.note) {
+        setContent(data.note.content);
+        setLocked(true);
+      } else {
+        setContent("");
+        setLocked(false);
+      }
+    } catch (error) {
+      console.error("Failed to load notes:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSave() {
+    if (!content.trim()) return;
+    try {
+      setSaving(true);
+      const userId = getOrCreateUserId();
+      const response = await fetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          lessonId: lesson.id,
+          content,
+        }),
+      });
+      const data = await response.json();
+      if (data.note) {
+        setLocked(true);
+        console.log("[Notes] Saved successfully");
+      }
+    } catch (error) {
+      console.error("Failed to save notes:", error);
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleEdit() {
-    setLocked((p) => ({ ...p, [lesson.id]: false }));
+    setLocked(false);
   }
 
   return (
@@ -48,7 +96,7 @@ export default function NotesTab({ lesson }: { lesson: Lesson }) {
           <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
             {wordCount} {LABEL_WORDS}
           </span>
-          {isLocked ? (
+          {locked ? (
             <button
               onClick={handleEdit}
               className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[13px] font-medium transition-colors"
@@ -64,23 +112,30 @@ export default function NotesTab({ lesson }: { lesson: Lesson }) {
           ) : (
             <button
               onClick={handleSave}
-              disabled={!currentNote.trim()}
+              disabled={!content.trim() || saving}
               className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-semibold text-white transition-opacity"
               style={{
                 background: "var(--accent)",
-                opacity: currentNote.trim() ? 1 : 0.4,
-                cursor: currentNote.trim() ? "pointer" : "not-allowed",
+                opacity: content.trim() && !saving ? 1 : 0.4,
+                cursor: content.trim() && !saving ? "pointer" : "not-allowed",
               }}
             >
               <RiSaveLine size={13} />
-              {LABEL_SAVE}
+              {saving ? "Saving..." : LABEL_SAVE}
             </button>
           )}
         </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden">
-        {isLocked ? (
+        {loading ? (
+          <div
+            className="flex h-full items-center justify-center"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Loading notes...
+          </div>
+        ) : locked ? (
           <div
             className="h-full overflow-y-auto rounded-xl border p-5"
             style={{
@@ -100,7 +155,7 @@ export default function NotesTab({ lesson }: { lesson: Lesson }) {
                 {LABEL_SAVED}
               </p>
             </div>
-            {currentNote.split("\n").map((line, i) => (
+            {content.split("\n").map((line, i) => (
               <p
                 key={i}
                 className="min-h-5 text-[13px] leading-relaxed"
@@ -112,10 +167,8 @@ export default function NotesTab({ lesson }: { lesson: Lesson }) {
           </div>
         ) : (
           <textarea
-            value={currentNote}
-            onChange={(e) =>
-              setNotes((p) => ({ ...p, [lesson.id]: e.target.value }))
-            }
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
             placeholder={`Write your notes about ${lesson.title}${PLACEHOLDER_SUFFIX}`}
             className="h-full w-full resize-none rounded-xl border p-5 text-[13px] leading-relaxed outline-none transition-colors"
             style={{

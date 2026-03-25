@@ -12,6 +12,9 @@ model User {
   email     String   @unique
   sessions  Session[]
   documents Document[]
+  notes     Note[]
+  summaries Summary[]
+  quizzes   Quiz[]
   createdAt DateTime @default(now())
 }
 
@@ -48,8 +51,54 @@ model Document {
 model Chunk {
   id         String   @id @default(cuid())
   documentId String
-  document   Document @relation(fields: [documentId], references: [id])
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   text       String
   embedding  Float[]
   createdAt  DateTime @default(now())
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, lessonId])
+}
+
+model Summary {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId     String
+  summaryText  String
+  createdAt    DateTime @default(now())
+
+  @@index([userId, lessonId])
+}
+
+model Quiz {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  String
+  questions Json
+  attempts  QuizAttempt[]
+  createdAt DateTime     @default(now())
+
+  @@index([userId, lessonId])
+}
+
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  score     Int
+  total     Int
+  createdAt DateTime @default(now())
+
+  @@index([quizId])
 }

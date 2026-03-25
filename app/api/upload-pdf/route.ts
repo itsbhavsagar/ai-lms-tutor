@@ -1,5 +1,5 @@
 import { CohereClient } from "cohere-ai";
-import { addChunks } from "@/app/lib/vectorStore";
+import { prisma } from "@/lib/db/prisma";
 
 const cohere = new CohereClient({ token: process.env.COHERE_API_KEY });
 
@@ -50,8 +50,12 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const lessonId = formData.get("lessonId") as string;
+    const userId = formData.get("userId") as string;
 
     if (!file) return Response.json({ error: "No file" }, { status: 400 });
+    if (!lessonId)
+      return Response.json({ error: "No lessonId" }, { status: 400 });
+    if (!userId) return Response.json({ error: "No userId" }, { status: 400 });
 
     const buffer = await file.arrayBuffer();
     const text = await extractTextFromPDF(buffer);
@@ -64,6 +68,7 @@ export async function POST(req: Request) {
     }
 
     const chunks = chunkText(text);
+    console.log(`[RAG] Processing ${chunks.length} chunks from ${file.name}`);
 
     const batchSize = 90;
     const allEmbeddings: number[][] = [];
@@ -78,20 +83,46 @@ export async function POST(req: Request) {
       allEmbeddings.push(...(response.embeddings as number[][]));
     }
 
-    addChunks(
-      chunks.map((text, i) => ({
+    await prisma.user.upsert({
+      where: { id: userId },
+      update: {},
+      create: { id: userId, email: `${userId}@temp.local` },
+    });
+
+    await prisma.document.deleteMany({
+      where: { userId, lessonId },
+    });
+
+    const document = await prisma.document.create({
+      data: {
+        userId,
+        lessonId,
+        title: file.name,
+      },
+    });
+
+    console.log(`[RAG] Document created: ${document.id}`);
+
+    await prisma.chunk.createMany({
+      data: chunks.map((text, i) => ({
+        documentId: document.id,
         text,
         embedding: allEmbeddings[i],
-        lessonId,
       })),
+    });
+
+    console.log(
+      `[RAG] Created ${chunks.length} chunks for document ${document.id}`,
     );
 
     return Response.json({
       success: true,
       chunksCreated: chunks.length,
+      documentId: document.id,
+      pages: Math.ceil(chunks.length / 5),
     });
   } catch (error) {
-    console.error("PDF upload error:", error);
+    console.error("[RAG] PDF upload error:", error);
     return Response.json({ error: String(error) }, { status: 500 });
   }
 }

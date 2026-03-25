@@ -9,6 +9,7 @@ import {
   RiSendPlane2Line,
   RiUploadCloud2Line,
 } from "react-icons/ri";
+import { getOrCreateUserId } from "@/lib/utils/localStorage";
 
 type InputMode = "paste" | "pdf";
 
@@ -67,7 +68,11 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
       const res = await fetch("/api/embed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, lessonId: lesson.id }),
+        body: JSON.stringify({
+          text,
+          lessonId: lesson.id,
+          userId: getOrCreateUserId(),
+        }),
       });
       const data = await res.json();
       setChunksCreated(data.chunksCreated);
@@ -75,6 +80,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
       const fd = new FormData();
       fd.append("file", file);
       fd.append("lessonId", lesson.id);
+      fd.append("userId", getOrCreateUserId());
       const res = await fetch("/api/upload-pdf", { method: "POST", body: fd });
       const data = await res.json();
       setChunksCreated(data.chunksCreated);
@@ -96,7 +102,11 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
     const res = await fetch("/api/rag-chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: history, lessonId: lesson.id }),
+      body: JSON.stringify({
+        messages: history,
+        lessonId: lesson.id,
+        userId: getOrCreateUserId(),
+      }),
     });
 
     const reader = res.body!.getReader();

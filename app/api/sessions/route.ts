@@ -11,7 +11,6 @@ import {
 
 export async function POST(req: Request) {
   try {
-    // Rate limiting
     const rateLimitResult = RATE_LIMITS.api(req);
     if (!rateLimitResult.allowed) {
       return createRateLimitResponse(
@@ -20,7 +19,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Validate request
     const body = await req.json();
     const { userId, lessonId, title } = validateSessionRequest(body);
 
@@ -39,8 +37,6 @@ export async function POST(req: Request) {
       },
     );
   } catch (error) {
-    console.error("🔥 FULL ERROR:", error);
-
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : String(error),

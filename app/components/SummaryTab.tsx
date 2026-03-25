@@ -1,11 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Lesson } from "../data/lessons";
 import {
   RiSparkling2Line,
   RiRefreshLine,
   RiBookOpenLine,
 } from "react-icons/ri";
+import { getOrCreateUserId } from "@/lib/utils/localStorage";
 
 type Summary = {
   overview: string;
@@ -24,22 +25,55 @@ const LABEL_HEADING = "AI Summary";
 
 export default function SummaryTab({ lesson }: { lesson: Lesson }) {
   const [summary, setSummary] = useState<Summary | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+
+  // Load summary on mount or lesson change
+  useEffect(() => {
+    loadSummary();
+  }, [lesson.id]);
+
+  async function loadSummary() {
+    try {
+      setLoading(true);
+      const userId = getOrCreateUserId();
+      const response = await fetch(
+        `/api/summary?userId=${userId}&lessonId=${lesson.id}`,
+      );
+      const data = await response.json();
+      if (data.summary) {
+        setSummary(data.summary);
+      }
+    } catch (error) {
+      console.error("Failed to load summary:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function generateSummary() {
-    setLoading(true);
-    setSummary(null);
-    const res = await fetch("/api/summary", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        lessonContent: lesson.content,
-        lessonTitle: lesson.title,
-      }),
-    });
-    const data = await res.json();
-    setSummary(data);
-    setLoading(false);
+    try {
+      setGenerating(true);
+      setSummary(null);
+      const userId = getOrCreateUserId();
+      const res = await fetch("/api/summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lessonContent: lesson.content,
+          lessonTitle: lesson.title,
+          userId,
+          lessonId: lesson.id,
+        }),
+      });
+      const data = await res.json();
+      setSummary(data);
+      console.log("[Summary] Generated and saved");
+    } catch (error) {
+      console.error("Failed to generate summary:", error);
+    } finally {
+      setGenerating(false);
+    }
   }
 
   return (
@@ -49,16 +83,16 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
           className="text-[15px] font-semibold"
           style={{ color: "var(--text)" }}
         >
-          {loading ? LABEL_GENERATING : LABEL_HEADING}
+          {generating ? LABEL_GENERATING : LABEL_HEADING}
         </h2>
         <button
           onClick={generateSummary}
-          disabled={loading}
+          disabled={generating}
           className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-semibold text-white transition-opacity"
           style={{
             background: "var(--accent)",
-            opacity: loading ? 0.55 : 1,
-            cursor: loading ? "not-allowed" : "pointer",
+            opacity: generating ? 0.55 : 1,
+            cursor: generating ? "not-allowed" : "pointer",
           }}
         >
           {summary ? (
@@ -66,7 +100,7 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
           ) : (
             <RiSparkling2Line size={14} />
           )}
-          {loading
+          {generating
             ? LABEL_GENERATING
             : summary
               ? LABEL_REGENERATE
@@ -75,7 +109,14 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-        {!loading && !summary && (
+        {loading && !summary ? (
+          <div
+            className="flex h-full items-center justify-center"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Loading...
+          </div>
+        ) : !generating && !summary ? (
           <div
             className="flex h-full flex-col items-center justify-center gap-3"
             style={{ color: "var(--text-muted)" }}
@@ -83,9 +124,9 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
             <RiBookOpenLine size={32} style={{ opacity: 0.35 }} />
             <p className="text-[13px]">{LABEL_EMPTY}</p>
           </div>
-        )}
+        ) : null}
 
-        {!loading && summary && (
+        {!generating && summary && (
           <div className="flex flex-col gap-4 pb-2">
             <div
               className="rounded-xl border p-5"

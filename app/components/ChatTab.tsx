@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Lesson } from "../data/lessons";
 import type { ChatMessage } from "../types/chat";
 import { getOrCreateUserId } from "../../lib/utils/localStorage";
@@ -23,18 +23,34 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
   useEffect(() => {
     setMessages([]);
     setInput("");
-    setSessionId(null); // Reset session when lesson changes
+    setSessionId(null);
+    setCursor(null);
+    setHasMore(true);
+    setLoadingMore(false);
   }, [lesson.id]);
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!shouldAutoScroll) return;
+
+    const container = messagesContainerRef.current;
+
+    if (!container) return;
+    requestAnimationFrame(() => {
+      container.scrollTop = container.scrollHeight;
+    });
   }, [messages]);
 
   useEffect(() => {
@@ -46,11 +62,71 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
 
       if (data.messages?.length) {
         setMessages(data.messages);
+        setCursor(data.nextCursor);
+        setHasMore(data.nextCursor !== null);
+        setShouldAutoScroll(true);
+      } else {
+        setMessages([]);
+        setCursor(null);
+        setHasMore(false);
       }
     }
 
     loadMessages();
   }, [sessionId]);
+
+  const loadMoreMessages = useCallback(async () => {
+    if (!cursor || !hasMore || loadingMore || !sessionId) return;
+    setShouldAutoScroll(false);
+    setLoadingMore(true);
+    const container = messagesContainerRef.current;
+    const prevScrollHeight = container?.scrollHeight || 0;
+
+    try {
+      const res = await fetch(
+        `/api/messages?sessionId=${sessionId}&cursor=${cursor}`,
+      );
+      const data = await res.json();
+
+      if (data.messages?.length) {
+        setMessages((prev) => [...data.messages, ...prev]);
+        setCursor(data.nextCursor);
+        setHasMore(data.nextCursor !== null);
+
+        setTimeout(() => {
+          if (container) {
+            const newScrollHeight = container.scrollHeight;
+            const scrollDiff = newScrollHeight - prevScrollHeight;
+            container.scrollTop += scrollDiff;
+          }
+        }, 0);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Failed to load more messages:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [cursor, hasMore, loadingMore, sessionId]);
+
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    // Load more when scrolled to within 100px of the top
+    if (container.scrollTop <= 100) {
+      loadMoreMessages();
+    }
+  }, [loadMoreMessages]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
 
   async function startRecording() {
     try {
@@ -82,29 +158,43 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     const existing = localStorage.getItem(sessionKey);
 
     if (existing) {
-      setSessionId(existing);
+      // Validate that the session still exists
+      fetch(`/api/messages?sessionId=${existing}`)
+        .then((res) => {
+          if (res.ok) {
+            setSessionId(existing);
+          } else {
+            createNewSession();
+          }
+        })
+        .catch(() => {
+          createNewSession();
+        });
       return;
     }
 
-    async function createSession() {
-      const res = await fetch("/api/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: getOrCreateUserId(),
-          lessonId: lesson.id,
-          title: lesson.title,
-        }),
-      });
+    createNewSession();
 
-      const data = await res.json();
+    async function createNewSession() {
+      try {
+        const res = await fetch("/api/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: getOrCreateUserId(),
+            lessonId: lesson.id,
+            title: lesson.title,
+          }),
+        });
 
-      setSessionId(data.session.id);
-      localStorage.setItem(sessionKey, data.session.id);
+        const data = await res.json();
+        setSessionId(data.session.id);
+        localStorage.setItem(sessionKey, data.session.id);
+      } catch (error) {
+        console.error("Failed to create session:", error);
+      }
     }
-
-    createSession();
-  }, [lesson.id]);
+  }, [lesson.id, lesson.title]);
 
   function stopRecording() {
     if (mediaRecorderRef.current && recording) {
@@ -132,7 +222,30 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   }
 
   async function sendMessage() {
-    if (!input.trim() || loading || !sessionId) return;
+    if (!input.trim() || loading) return;
+
+    let currentSessionId = sessionId;
+    if (!currentSessionId) {
+      try {
+        const res = await fetch("/api/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: getOrCreateUserId(),
+            lessonId: lesson.id,
+            title: lesson.title,
+          }),
+        });
+        const data = await res.json();
+        currentSessionId = data.session.id;
+        setSessionId(currentSessionId);
+        localStorage.setItem(`sessionId_${lesson.id}`, currentSessionId!);
+      } catch (error) {
+        console.error("Failed to create session:", error);
+        return;
+      }
+    }
+
     const userMsg: ChatMessage = { role: "user", content: input };
     const history = [...messages, userMsg];
     setMessages(history);
@@ -140,37 +253,112 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     setLoading(true);
     setMessages((p) => [...p, { role: "assistant", content: "" }]);
 
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: history,
-        sessionId,
-        lessonContent: lesson.content,
-      }),
-    });
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: history,
+          sessionId: currentSessionId,
+          lessonContent: lesson.content,
+        }),
+      });
 
-    const reader = res.body!.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
+      if (res.status === 404) {
+        const createRes = await fetch("/api/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: getOrCreateUserId(),
+            lessonId: lesson.id,
+            title: lesson.title,
+          }),
+        });
+        const createData = await createRes.json();
+        const newSessionId = createData.session.id;
+        setSessionId(newSessionId);
+        localStorage.setItem(`sessionId_${lesson.id}`, newSessionId);
+
+        const retryRes = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: history,
+            sessionId: newSessionId,
+            lessonContent: lesson.content,
+          }),
+        });
+
+        if (!retryRes.ok) {
+          throw new Error(`Chat failed: ${retryRes.status}`);
+        }
+
+        const reader = retryRes.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          setMessages((p) => {
+            const u = [...p];
+            u[u.length - 1] = { ...u[u.length - 1], content: buffer };
+            return [...u];
+          });
+        }
+      } else if (!res.ok) {
+        throw new Error(`Chat failed: ${res.status}`);
+      } else {
+        const reader = res.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          setMessages((p) => {
+            const u = [...p];
+            u[u.length - 1] = { ...u[u.length - 1], content: buffer };
+            return [...u];
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Chat error:", error);
       setMessages((p) => {
         const u = [...p];
-        u[u.length - 1] = { ...u[u.length - 1], content: buffer };
+        u[u.length - 1] = {
+          ...u[u.length - 1],
+          content: "Sorry, I encountered an error. Please try again.",
+        };
         return [...u];
       });
     }
+
     setLoading(false);
   }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+      <div
+        ref={messagesContainerRef}
+        className="min-h-0 flex-1 overflow-y-auto pr-1"
+      >
         <div className="flex flex-col gap-3 pb-2">
-          {messages.length === 0 && (
+          {loadingMore && (
+            <div className="flex justify-center py-2">
+              <div
+                className="flex items-center gap-2 text-[12px]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                <span className="dot dot-1" />
+                <span className="dot dot-2" />
+                <span className="dot dot-3" />
+                Loading older messages...
+              </div>
+            </div>
+          )}
+          {messages.length === 0 && !loadingMore && (
             <div
               className="mt-16 flex flex-col items-center gap-3 text-center"
               style={{ color: "var(--text-muted)" }}
