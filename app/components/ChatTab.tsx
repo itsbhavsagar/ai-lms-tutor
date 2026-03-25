@@ -21,6 +21,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   const [loading, setLoading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -33,6 +34,21 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (!sessionId) return;
+
+    async function loadMessages() {
+      const res = await fetch(`/api/messages?sessionId=${sessionId}`);
+      const data = await res.json();
+
+      if (data.messages?.length) {
+        setMessages(data.messages);
+      }
+    }
+
+    loadMessages();
+  }, [sessionId]);
 
   async function startRecording() {
     try {
@@ -58,6 +74,34 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
       alert(MIC_DENIED_MSG);
     }
   }
+
+  useEffect(() => {
+    const existing = localStorage.getItem("sessionId");
+
+    if (existing) {
+      setSessionId(existing);
+      return;
+    }
+
+    async function createSession() {
+      const res = await fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: "test_user",
+          lessonId: lesson.id,
+          title: lesson.title,
+        }),
+      });
+
+      const data = await res.json();
+
+      setSessionId(data.session.id);
+      localStorage.setItem("sessionId", data.session.id);
+    }
+
+    createSession();
+  }, [lesson.id]);
 
   function stopRecording() {
     if (mediaRecorderRef.current && recording) {
@@ -85,7 +129,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   }
 
   async function sendMessage() {
-    if (!input.trim() || loading) return;
+    if (!input.trim() || loading || !sessionId) return;
     const userMsg: ChatMessage = { role: "user", content: input };
     const history = [...messages, userMsg];
     setMessages(history);
@@ -98,6 +142,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         messages: history,
+        sessionId,
         lessonContent: lesson.content,
       }),
     });
@@ -242,7 +287,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
 
           <button
             onClick={sendMessage}
-            disabled={loading || transcribing || !input.trim()}
+            disabled={loading || transcribing || !input.trim() || !sessionId}
             className="flex h-10 items-center gap-1.5 rounded-xl px-4 text-[13px] font-semibold text-white transition-opacity"
             style={{
               background: "var(--accent)",
