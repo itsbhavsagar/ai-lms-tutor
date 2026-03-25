@@ -1,5 +1,6 @@
 import { streamText } from "ai";
 import { Groq } from "groq-sdk";
+import { Message } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { retrieveRelevantChunks, formatRetrievedContext } from "./rag";
 import {
@@ -36,10 +37,17 @@ export async function chatWithContext(
     throw new Error(`Session ${sessionId} not found`);
   }
 
-  const contextMessages = selectMemoryMessages(session.messages, {
-    maxMessages: config.maxContextMessages,
-    maxTokens: config.maxContextTokens,
-  });
+  const contextMessages = selectMemoryMessages(
+    session.messages.map((msg: Message) => ({
+      role: msg.role as "user" | "assistant",
+      content: msg.content,
+      timestamp: msg.createdAt,
+    })),
+    {
+      maxMessages: config.maxContextMessages,
+      maxTokens: config.maxContextTokens,
+    },
+  );
 
   let ragContext = "";
   if (config.useRag !== false) {
