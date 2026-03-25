@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Lesson } from "../data/lessons";
 import type { ChatMessage } from "../types/chat";
+import { getOrCreateUserId } from "../../lib/utils/localStorage";
 import {
   RiSendPlane2Line,
   RiMicLine,
@@ -30,6 +31,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   useEffect(() => {
     setMessages([]);
     setInput("");
+    setSessionId(null); // Reset session when lesson changes
   }, [lesson.id]);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -76,7 +78,8 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   }
 
   useEffect(() => {
-    const existing = localStorage.getItem("sessionId");
+    const sessionKey = `sessionId_${lesson.id}`;
+    const existing = localStorage.getItem(sessionKey);
 
     if (existing) {
       setSessionId(existing);
@@ -88,7 +91,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: "test_user",
+          userId: getOrCreateUserId(),
           lessonId: lesson.id,
           title: lesson.title,
         }),
@@ -97,7 +100,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
       const data = await res.json();
 
       setSessionId(data.session.id);
-      localStorage.setItem("sessionId", data.session.id);
+      localStorage.setItem(sessionKey, data.session.id);
     }
 
     createSession();
