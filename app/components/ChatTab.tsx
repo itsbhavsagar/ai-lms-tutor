@@ -158,18 +158,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     const existing = localStorage.getItem(sessionKey);
 
     if (existing) {
-      // Validate that the session still exists
-      fetch(`/api/messages?sessionId=${existing}`)
-        .then((res) => {
-          if (res.ok) {
-            setSessionId(existing);
-          } else {
-            createNewSession();
-          }
-        })
-        .catch(() => {
-          createNewSession();
-        });
+      setSessionId(existing);
       return;
     }
 
