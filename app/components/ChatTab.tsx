@@ -51,7 +51,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     requestAnimationFrame(() => {
       container.scrollTop = container.scrollHeight;
     });
-  }, [messages]);
+  }, [messages, shouldAutoScroll]);
 
   useEffect(() => {
     if (!sessionId) return;

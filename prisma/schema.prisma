@@ -8,14 +8,14 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
+  id        String     @id @default(cuid())
+  email     String     @unique
   sessions  Session[]
   documents Document[]
   notes     Note[]
   summaries Summary[]
   quizzes   Quiz[]
-  createdAt DateTime @default(now())
+  createdAt DateTime   @default(now())
 }
 
 model Session {
@@ -70,24 +70,24 @@ model Note {
 }
 
 model Summary {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lessonId     String
-  summaryText  String
-  createdAt    DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String
+  summaryText String
+  createdAt   DateTime @default(now())
 
   @@index([userId, lessonId])
 }
 
 model Quiz {
-  id        String       @id @default(cuid())
+  id        String        @id @default(cuid())
   userId    String
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   lessonId  String
   questions Json
   attempts  QuizAttempt[]
-  createdAt DateTime     @default(now())
+  createdAt DateTime      @default(now())
 
   @@index([userId, lessonId])
 }

@@ -15,7 +15,8 @@ const TAB_SUBTITLE =
 const BRAND_NAME = "AI LMS Tutor";
 const BRAND_STACK = "Groq · Cohere · RAG";
 const LESSONS_LABEL = "Lessons";
-const BUILT_BY = "Built by Bhavsagar · Next.js · Groq · Cohere";
+const BUILT_BY =
+  "Built by Bhavsagar · Next.js · Groq · Cohere · PostgresSQL · Prisma";
 
 export default function Home() {
   const [selectedLesson, setSelectedLesson] = useState<Lesson>(lessons[0]);

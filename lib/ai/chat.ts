@@ -1,4 +1,3 @@
-import { streamText } from "ai";
 import { Groq } from "groq-sdk";
 import { Message } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
