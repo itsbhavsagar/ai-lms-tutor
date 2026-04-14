@@ -11,6 +11,7 @@ import {
   RiTrophyLine,
 } from "react-icons/ri";
 import { getOrCreateUserId } from "@/lib/utils/localStorage";
+import { fetchQuiz, generateQuiz, submitQuiz } from "@/lib/api/quiz";
 
 const LABEL_GENERATE = "Generate Quiz";
 const LABEL_REGENERATE = "Regenerate";
@@ -51,10 +52,8 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
     try {
       setLoading(true);
       const userId = getOrCreateUserId();
-      const response = await fetch(
-        `/api/quiz?userId=${userId}&lessonId=${lesson.id}`,
-      );
-      const data = await response.json();
+      const data = await fetchQuiz(userId, lesson.id);
+
       if (data.quiz) {
         const attempts = data.attempts || [];
         const lastAttempt = attempts[attempts.length - 1];
@@ -63,7 +62,12 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
           const savedSelected = localStorage.getItem(
             `quiz-selected-${data.quiz.id}`,
           );
-          const lastSelected = savedSelected ? JSON.parse(savedSelected) : {};
+
+          let lastSelected = {};
+          try {
+            lastSelected = savedSelected ? JSON.parse(savedSelected) : {};
+          } catch {}
+
           setQuizData({
             id: data.quiz.id,
             questions: data.quiz.questions,
@@ -98,7 +102,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
     }
   }
 
-  async function generateQuiz() {
+  async function handleGenerateQuiz() {
     try {
       setGenerating(true);
       setSubmitted(false);
@@ -106,16 +110,14 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
       setSelected({});
       setQuizData(null);
       const userId = getOrCreateUserId();
-      await fetch("/api/quiz", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lessonContent: lesson.content,
-          lessonTitle: lesson.title,
-          userId,
-          lessonId: lesson.id,
-        }),
+
+      await generateQuiz({
+        lessonContent: lesson.content,
+        lessonTitle: lesson.title,
+        userId,
+        lessonId: lesson.id,
       });
+
       await loadQuiz();
     } catch (error) {
       console.error("Failed to generate quiz:", error);
@@ -124,34 +126,31 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
     }
   }
 
-  async function submitQuiz() {
+  async function handleSubmitQuiz() {
     if (!quizData) return;
+
     try {
       const score = quizData.questions.filter(
         (q, i) => selected[i] === q.correct,
       ).length;
 
-      const response = await fetch("/api/quiz/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          quizId: quizData.id,
-          score,
-          total: quizData.questions.length,
-        }),
+      await submitQuiz({
+        quizId: quizData.id,
+        score,
+        total: quizData.questions.length,
       });
 
-      if (response.ok) {
-        localStorage.setItem(
-          `quiz-selected-${quizData.id}`,
-          JSON.stringify(selected),
-        );
-        setQuizData((prev) =>
-          prev ? { ...prev, lastScore: score, lastSelected: selected } : prev,
-        );
-        setSubmitted(true);
-        setShowResult(true);
-      }
+      localStorage.setItem(
+        `quiz-selected-${quizData.id}`,
+        JSON.stringify(selected),
+      );
+
+      setQuizData((prev) =>
+        prev ? { ...prev, lastScore: score, lastSelected: selected } : prev,
+      );
+
+      setSubmitted(true);
+      setShowResult(true);
     } catch (error) {
       console.error("Failed to submit quiz:", error);
     }
@@ -220,7 +219,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
         </div>
 
         <button
-          onClick={generateQuiz}
+          onClick={handleGenerateQuiz}
           disabled={generating}
           className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-semibold text-white transition-opacity"
           style={{
@@ -410,7 +409,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
 
             {!submitted && (
               <button
-                onClick={submitQuiz}
+                onClick={handleSubmitQuiz}
                 disabled={answered < questions.length}
                 className="self-start rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white transition-opacity"
                 style={{
