@@ -13,7 +13,8 @@ import {
 const PLACEHOLDER_SUFFIX = "…";
 const SEND_LABEL = "Send";
 const TRANSCRIBING_LABEL = "Transcribing…";
-const RECORDING_LABEL = "Recording — release to stop";
+const HOLD_TO_RECORD_LABEL = "Hold to record voice";
+const RELEASE_TO_STOP_LABEL = "Release when you are done";
 const MIC_DENIED_MSG = "Microphone access denied.";
 
 export default function ChatTab({ lesson }: { lesson: Lesson }) {
@@ -22,6 +23,8 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   const [loading, setLoading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  const [showMicHint, setShowMicHint] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -131,11 +134,13 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported("audio/wav")
-        ? "audio/wav"
-        : MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-          ? "audio/webm;codecs=opus"
-          : "audio/webm";
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+          ? "audio/webm"
+          : MediaRecorder.isTypeSupported("audio/mp4")
+            ? "audio/mp4"
+            : "";
       const mr = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mr;
       chunksRef.current = [];
@@ -144,9 +149,11 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
       };
       mr.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
-        await transcribeAudio(new Blob(chunksRef.current, { type: mimeType }));
+        const actualType = mr.mimeType || mimeType || "audio/webm";
+        const audioBlob = new Blob(chunksRef.current, { type: actualType });
+        await transcribeAudio(audioBlob);
       };
-      mr.start();
+      mr.start(250);
       setRecording(true);
     } catch {
       alert(MIC_DENIED_MSG);
@@ -185,21 +192,63 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     }
   }, [lesson.id, lesson.title]);
 
-  function stopRecording() {
+  const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && recording) {
       mediaRecorderRef.current.stop();
       setRecording(false);
       setTranscribing(true);
     }
-  }
+    setShowMicHint(false);
+  }, [recording]);
+
+  useEffect(() => {
+    if (!recording) return;
+
+    const stopOnRelease = () => stopRecording();
+
+    window.addEventListener("mouseup", stopOnRelease);
+    window.addEventListener("touchend", stopOnRelease);
+    window.addEventListener("touchcancel", stopOnRelease);
+
+    return () => {
+      window.removeEventListener("mouseup", stopOnRelease);
+      window.removeEventListener("touchend", stopOnRelease);
+      window.removeEventListener("touchcancel", stopOnRelease);
+    };
+  }, [recording, stopRecording]);
+
+  useEffect(() => {
+    if (!recording) {
+      setRecordingSeconds(0);
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setRecordingSeconds((prev) => prev + 1);
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [recording]);
 
   async function transcribeAudio(blob: Blob) {
     try {
+      if (blob.size === 0) {
+        alert("No audio captured. Hold the mic button slightly longer and try again.");
+        return;
+      }
+
       const fd = new FormData();
+      const ext = blob.type.includes("mp4")
+        ? "mp4"
+        : blob.type.includes("wav")
+          ? "wav"
+          : blob.type.includes("ogg")
+            ? "ogg"
+            : "webm";
       fd.append(
         "audio",
         blob,
-        `recording.${blob.type.includes("wav") ? "wav" : "webm"}`,
+        `recording.${ext}`,
       );
       const res = await fetch("/api/transcribe", { method: "POST", body: fd });
       const data = await res.json();
@@ -327,6 +376,12 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     setLoading(false);
   }
 
+  function formatRecordingTime(totalSeconds: number) {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div
@@ -415,19 +470,6 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
         className="flex-none border-t pt-4"
         style={{ borderColor: "var(--border)" }}
       >
-        {recording && (
-          <p
-            className="mb-2 flex items-center gap-1.5 text-[12px]"
-            style={{ color: "var(--red)" }}
-          >
-            <span
-              className="rec-pulse inline-block h-2 w-2 rounded-full"
-              style={{ background: "var(--red)" }}
-            />
-            {RECORDING_LABEL}
-          </p>
-        )}
-
         <div className="flex items-center gap-2">
           <input
             className="flex-1 rounded-xl border px-4 py-2.5 text-[13px] outline-none transition-colors"
@@ -443,27 +485,58 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
             disabled={transcribing}
           />
 
-          <button
-            onMouseDown={startRecording}
-            onMouseUp={stopRecording}
-            onTouchStart={startRecording}
-            onTouchEnd={stopRecording}
-            disabled={transcribing}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all"
-            style={{
-              background: recording ? "var(--red-soft)" : "var(--bg)",
-              border: `1px solid ${recording ? "var(--red-border)" : "var(--border-strong)"}`,
-              color: recording ? "var(--red)" : "var(--text-muted)",
-              opacity: transcribing ? 0.5 : 1,
-              cursor: transcribing ? "not-allowed" : "pointer",
-            }}
-          >
-            {recording ? (
-              <RiStopCircleLine size={16} />
-            ) : (
-              <RiMicLine size={16} />
-            )}
-          </button>
+          <div className="relative">
+            <div
+              className="pointer-events-none absolute -top-11 left-1/2 -translate-x-1/2 rounded-lg px-2.5 py-1 text-[11px] whitespace-nowrap transition-all duration-200"
+              style={{
+                background: recording ? "var(--red-soft)" : "var(--accent-soft)",
+                border: `1px solid ${recording ? "var(--red-border)" : "var(--accent-border)"}`,
+                color: recording ? "var(--red)" : "var(--text)",
+                opacity: recording || showMicHint ? 1 : 0,
+                transform: `translateX(-50%) translateY(${recording || showMicHint ? "0px" : "4px"})`,
+              }}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                {recording && (
+                  <span
+                    className="rec-pulse inline-block h-1.5 w-1.5 rounded-full"
+                    style={{ background: "var(--red)" }}
+                  />
+                )}
+                {recording
+                  ? `${RELEASE_TO_STOP_LABEL} • ${formatRecordingTime(recordingSeconds)}`
+                  : HOLD_TO_RECORD_LABEL}
+              </span>
+            </div>
+
+            <button
+              onMouseDown={startRecording}
+              onMouseUp={stopRecording}
+              onMouseLeave={stopRecording}
+              onMouseEnter={() => setShowMicHint(true)}
+              onTouchStart={startRecording}
+              onTouchEnd={stopRecording}
+              onTouchCancel={stopRecording}
+              onBlur={() => setShowMicHint(false)}
+              onFocus={() => setShowMicHint(true)}
+              aria-label={recording ? RELEASE_TO_STOP_LABEL : HOLD_TO_RECORD_LABEL}
+              disabled={transcribing}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all"
+              style={{
+                background: recording ? "var(--red-soft)" : "var(--bg)",
+                border: `1px solid ${recording ? "var(--red-border)" : "var(--border-strong)"}`,
+                color: recording ? "var(--red)" : "var(--text-muted)",
+                opacity: transcribing ? 0.5 : 1,
+                cursor: transcribing ? "not-allowed" : "pointer",
+              }}
+            >
+              {recording ? (
+                <RiStopCircleLine size={16} />
+              ) : (
+                <RiMicLine size={16} />
+              )}
+            </button>
+          </div>
 
           <button
             onClick={sendMessage}
