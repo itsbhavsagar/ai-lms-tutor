@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Lesson } from "../data/lessons";
 import type { ChatMessage } from "../types/chat";
 import { getOrCreateUserId } from "../../lib/utils/localStorage";
+import MessageContent from "./MessageContent";
 import {
   RiSendPlane2Line,
   RiMicLine,
@@ -233,7 +234,9 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   async function transcribeAudio(blob: Blob) {
     try {
       if (blob.size === 0) {
-        alert("No audio captured. Hold the mic button slightly longer and try again.");
+        alert(
+          "No audio captured. Hold the mic button slightly longer and try again.",
+        );
         return;
       }
 
@@ -245,11 +248,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
           : blob.type.includes("ogg")
             ? "ogg"
             : "webm";
-      fd.append(
-        "audio",
-        blob,
-        `recording.${ext}`,
-      );
+      fd.append("audio", blob, `recording.${ext}`);
       const res = await fetch("/api/transcribe", { method: "POST", body: fd });
       const data = await res.json();
       if (data.text) setInput(data.text);
@@ -456,8 +455,12 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
                     <span className="dot dot-2" />
                     <span className="dot dot-3" />
                   </span>
+                ) : msg.role === "assistant" ? (
+                  <MessageContent content={msg.content} />
                 ) : (
-                  msg.content
+                  <span className="whitespace-pre-wrap wrap-break-word">
+                    {msg.content}
+                  </span>
                 )}
               </div>
             </div>
@@ -489,7 +492,9 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
             <div
               className="pointer-events-none absolute -top-11 left-1/2 -translate-x-1/2 rounded-lg px-2.5 py-1 text-[11px] whitespace-nowrap transition-all duration-200"
               style={{
-                background: recording ? "var(--red-soft)" : "var(--accent-soft)",
+                background: recording
+                  ? "var(--red-soft)"
+                  : "var(--accent-soft)",
                 border: `1px solid ${recording ? "var(--red-border)" : "var(--accent-border)"}`,
                 color: recording ? "var(--red)" : "var(--text)",
                 opacity: recording || showMicHint ? 1 : 0,
@@ -519,7 +524,9 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
               onTouchCancel={stopRecording}
               onBlur={() => setShowMicHint(false)}
               onFocus={() => setShowMicHint(true)}
-              aria-label={recording ? RELEASE_TO_STOP_LABEL : HOLD_TO_RECORD_LABEL}
+              aria-label={
+                recording ? RELEASE_TO_STOP_LABEL : HOLD_TO_RECORD_LABEL
+              }
               disabled={transcribing}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all"
               style={{

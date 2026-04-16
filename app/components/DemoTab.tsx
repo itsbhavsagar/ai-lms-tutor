@@ -2,6 +2,7 @@
 
 import { JSX, useRef, useEffect, useState } from "react";
 import type { ChatMessage } from "../types/chat";
+import MessageContent from "./MessageContent";
 import { RiSendPlane2Line, RiPlayCircleLine } from "react-icons/ri";
 
 const BADGE_TEXT = "Live Chat — streaming chat powered by Groq";
@@ -16,10 +17,11 @@ const DemoTab = (): JSX.Element => {
   const [input, setInput] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const lastMessage = messages[messages.length - 1]?.content;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [lastMessage]);
 
   async function sendMessage(): Promise<void> {
     if (!input.trim() || loading) return;
@@ -126,8 +128,12 @@ const DemoTab = (): JSX.Element => {
                     <span className="dot dot-2" />
                     <span className="dot dot-3" />
                   </span>
+                ) : msg.role === "assistant" ? (
+                  <MessageContent content={msg.content} />
                 ) : (
-                  msg.content
+                  <span className="whitespace-pre-wrap wrap-break-word">
+                    {msg.content}
+                  </span>
                 )}
               </div>
             </div>

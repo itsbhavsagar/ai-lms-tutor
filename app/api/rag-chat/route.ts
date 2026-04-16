@@ -70,6 +70,10 @@ export async function POST(req: Request) {
 
 If the answer is not present, say you don't have enough information.
 
+Formatting:
+- When listing multiple points, use bullet points or numbered lists.
+- Put each bullet or number on its own line.
+
 Context:
 """${context}"""`,
         },

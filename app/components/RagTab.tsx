@@ -10,6 +10,7 @@ import {
   RiUploadCloud2Line,
 } from "react-icons/ri";
 import { getOrCreateUserId } from "@/lib/utils/localStorage";
+import MessageContent from "./MessageContent";
 
 type InputMode = "paste" | "pdf";
 
@@ -49,6 +50,8 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const lastMessage = messages[messages.length - 1]?.content;
+
   useEffect(() => {
     setIndexed(false);
     setText("");
@@ -60,7 +63,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [lastMessage]);
 
   async function handleIndex() {
     setIndexing(true);
@@ -347,15 +350,18 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                     ) : msg.role === "assistant" &&
                       loading &&
                       i === messages.length - 1 ? (
-                      <>
-                        {msg.content}
+                      <div className="space-y-2">
+                        <MessageContent content={msg.content} />
                         <span style={{ color: "var(--text-muted)" }}>
-                          {" "}
                           {LABEL_RETRIEVING}
                         </span>
-                      </>
+                      </div>
+                    ) : msg.role === "assistant" ? (
+                      <MessageContent content={msg.content} />
                     ) : (
-                      msg.content
+                      <span className="whitespace-pre-wrap wrap-break-word">
+                        {msg.content}
+                      </span>
                     )}
                   </div>
                 </div>
