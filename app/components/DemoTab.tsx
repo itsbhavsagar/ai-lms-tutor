@@ -56,17 +56,17 @@ const DemoTab = (): JSX.Element => {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="mb-3 flex flex-none items-center gap-2">
+      <div className="mb-3 flex min-w-0 flex-none items-center gap-2">
         <span
-          className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold"
+          className="flex min-w-0 items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold"
           style={{ background: "var(--accent-soft)", color: "var(--accent)" }}
         >
-          <RiPlayCircleLine size={12} />
-          {BADGE_TEXT}
+          <RiPlayCircleLine size={12} className="shrink-0" />
+          <span className="min-w-0 break-words">{BADGE_TEXT}</span>
         </span>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+      <div className="min-h-0 flex-1 overflow-y-auto pr-0 sm:pr-1">
         <div className="flex flex-col gap-3 pb-2">
           {messages.length === 0 && (
             <div
@@ -92,7 +92,7 @@ const DemoTab = (): JSX.Element => {
           {messages.map((msg, i) => (
             <div
               key={i}
-              className="msg-in flex"
+              className="msg-in flex min-w-0"
               style={{
                 justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
               }}
@@ -106,7 +106,7 @@ const DemoTab = (): JSX.Element => {
                 </div>
               )}
               <div
-                className="max-w-[72%] rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed"
+                className="min-w-0 max-w-[88%] break-words rounded-2xl px-3 py-2.5 text-[13px] leading-relaxed sm:max-w-[78%] sm:px-4 lg:max-w-[72%]"
                 style={
                   msg.role === "user"
                     ? {
@@ -131,7 +131,7 @@ const DemoTab = (): JSX.Element => {
                 ) : msg.role === "assistant" ? (
                   <MessageContent content={msg.content} />
                 ) : (
-                  <span className="whitespace-pre-wrap wrap-break-word">
+                  <span className="whitespace-pre-wrap break-words">
                     {msg.content}
                   </span>
                 )}
@@ -146,9 +146,9 @@ const DemoTab = (): JSX.Element => {
         className="flex-none border-t pt-4"
         style={{ borderColor: "var(--border)" }}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <input
-            className="flex-1 rounded-xl border px-4 py-2.5 text-[13px] outline-none"
+            className="min-h-10 w-full min-w-0 flex-1 rounded-xl border px-4 py-2.5 text-[13px] outline-none"
             style={{
               border: "1px solid var(--border-strong)",
               background: "var(--bg)",
@@ -166,7 +166,7 @@ const DemoTab = (): JSX.Element => {
           <button
             onClick={sendMessage}
             disabled={loading || !input.trim()}
-            className="flex h-10 items-center gap-1.5 rounded-xl px-4 text-[13px] font-semibold text-white transition-opacity"
+            className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl px-4 text-[13px] font-semibold text-white transition-opacity sm:w-auto"
             style={{
               background: "var(--accent)",
               opacity: loading || !input.trim() ? 0.45 : 1,

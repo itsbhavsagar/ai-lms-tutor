@@ -28,50 +28,54 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-full w-full overflow-hidden">
+    <div className="flex h-full w-full min-w-0 flex-col overflow-hidden md:flex-row">
       <aside
-        className="flex h-full w-60 flex-none flex-col overflow-hidden"
+        className="flex max-h-[42dvh] w-full flex-none flex-col overflow-hidden md:h-full md:max-h-none md:w-64 lg:w-72"
         style={{
           background: "var(--bg-sidebar)",
           borderRight: "1px solid rgba(255,255,255,0.06)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
         }}
       >
-        <div className="flex items-center gap-2.5 px-5 pt-6 pb-5">
+        <div className="flex items-center gap-2.5 px-4 py-4 sm:px-5 md:pt-6 md:pb-5">
           <div
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
             style={{ background: "var(--accent)" }}
           >
             <RiGraduationCapLine size={16} color="#fff" />
           </div>
-          <div>
+          <div className="min-w-0">
             <p
-              className="text-[16px] font-semibold leading-tight"
+              className="truncate text-[16px] font-semibold leading-tight"
               style={{ color: "var(--text-sidebar-active)" }}
             >
               {BRAND_NAME}
             </p>
-            <p className="text-[10px]" style={{ color: "var(--text-sidebar)" }}>
+            <p
+              className="truncate text-[10px]"
+              style={{ color: "var(--text-sidebar)" }}
+            >
               Powered By: {BRAND_STACK}
             </p>
           </div>
         </div>
 
         <p
-          className="mb-2 px-5 text-[16px] font-semibold uppercase tracking-widest"
+          className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-widest sm:px-5 md:text-[16px]"
           style={{ color: "var(--text-sidebar)", opacity: 0.5 }}
         >
           {LESSONS_LABEL}
         </p>
 
-        <div className="flex-1 overflow-y-auto px-3 pb-4">
-          <div className="flex flex-col gap-0.5">
+        <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden px-4 pb-3 md:overflow-x-hidden md:overflow-y-auto md:px-3 md:pb-4">
+          <div className="flex gap-2 md:flex-col md:gap-0.5">
             {lessons.map((lesson) => {
               const active = selectedLesson.id === lesson.id;
               return (
                 <button
                   key={lesson.id}
                   onClick={() => selectLesson(lesson)}
-                  className="w-full rounded-lg px-3 py-2 text-left text-[13px] font-medium transition-all duration-150"
+                  className="min-w-44 flex-none rounded-lg px-3 py-2 text-left text-[13px] font-medium transition-colors duration-150 md:w-full md:min-w-0"
                   style={{
                     background: active
                       ? "rgba(255,255,255,0.06)"
@@ -87,11 +91,11 @@ export default function Home() {
         </div>
 
         <div
-          className="border-t px-5 py-4"
+          className="border-t px-4 py-2 sm:px-5 md:py-4"
           style={{ borderColor: "rgba(255,255,255,0.07)" }}
         >
           <p
-            className="text-[10px] leading-relaxed"
+            className="line-clamp-2 text-[10px] leading-relaxed md:line-clamp-none"
             style={{ color: "var(--text-sidebar)", opacity: 0.4 }}
           >
             {BUILT_BY}
@@ -100,30 +104,33 @@ export default function Home() {
       </aside>
 
       <main
-        className="flex h-full min-w-0 flex-1 flex-col overflow-hidden"
+        className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
         style={{ background: "var(--bg)" }}
       >
         <div
-          className="flex flex-none flex-col border-b px-8 pt-6"
+          className="flex flex-none flex-col border-b px-4 pt-4 sm:px-6 md:px-8 md:pt-6"
           style={{ borderColor: "var(--border)" }}
         >
-          <div className="mb-4">
+          <div className="mb-4 min-w-0">
             <h1
-              className="mb-0.5 text-[22px] font-semibold leading-tight tracking-tight"
+              className="mb-0.5 truncate text-xl font-semibold leading-tight tracking-tight sm:text-[22px]"
               style={{ fontFamily: "'Lora', serif", color: "var(--text)" }}
             >
               {selectedLesson.title}
             </h1>
-            <p className="text-[13px]" style={{ color: "var(--text-muted)" }}>
+            <p
+              className="max-w-3xl text-[12px] leading-relaxed sm:text-[13px]"
+              style={{ color: "var(--text-muted)" }}
+            >
               {TAB_SUBTITLE}
             </p>
           </div>
           <Tabs activeTab={activeTab} onChange={setActiveTab} />
         </div>
 
-        <div className="min-h-0 flex-1 overflow-hidden p-6">
+        <div className="min-h-0 flex-1 overflow-hidden p-3 sm:p-4 md:p-6">
           <div
-            className="flex h-full flex-col rounded-xl p-6"
+            className="flex h-full min-h-0 flex-col rounded-lg p-3 sm:rounded-xl sm:p-4 md:p-6"
             style={{
               background: "var(--bg-panel)",
               border: "1px solid var(--border)",

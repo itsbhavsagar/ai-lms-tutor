@@ -118,7 +118,6 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     const container = messagesContainerRef.current;
     if (!container) return;
 
-    // Load more when scrolled to within 100px of the top
     if (container.scrollTop <= 100) {
       loadMoreMessages();
     }
@@ -385,7 +384,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     <div className="flex min-h-0 flex-1 flex-col">
       <div
         ref={messagesContainerRef}
-        className="min-h-0 flex-1 overflow-y-auto pr-1"
+        className="min-h-0 flex-1 overflow-y-auto pr-0 sm:pr-1"
       >
         <div className="flex flex-col gap-3 pb-2">
           {loadingMore && (
@@ -419,7 +418,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
           {messages.map((msg, i) => (
             <div
               key={i}
-              className="msg-in flex"
+              className="msg-in flex min-w-0"
               style={{
                 justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
               }}
@@ -433,7 +432,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
                 </div>
               )}
               <div
-                className="max-w-[72%] rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed"
+                className="min-w-0 max-w-[88%] break-words rounded-2xl px-3 py-2.5 text-[13px] leading-relaxed sm:max-w-[78%] sm:px-4 lg:max-w-[72%]"
                 style={
                   msg.role === "user"
                     ? {
@@ -458,7 +457,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
                 ) : msg.role === "assistant" ? (
                   <MessageContent content={msg.content} />
                 ) : (
-                  <span className="whitespace-pre-wrap wrap-break-word">
+                  <span className="whitespace-pre-wrap break-words">
                     {msg.content}
                   </span>
                 )}
@@ -473,9 +472,9 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
         className="flex-none border-t pt-4"
         style={{ borderColor: "var(--border)" }}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <input
-            className="flex-1 rounded-xl border px-4 py-2.5 text-[13px] outline-none transition-colors"
+            className="min-h-10 w-full min-w-0 flex-1 rounded-xl border px-4 py-2.5 text-[13px] outline-none transition-colors"
             style={{
               border: "1px solid var(--border-strong)",
               background: "var(--bg)",
@@ -488,79 +487,81 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
             disabled={transcribing}
           />
 
-          <div className="relative">
-            <div
-              className="pointer-events-none absolute -top-11 left-1/2 -translate-x-1/2 rounded-lg px-2.5 py-1 text-[11px] whitespace-nowrap transition-all duration-200"
-              style={{
-                background: recording
-                  ? "var(--red-soft)"
-                  : "var(--accent-soft)",
-                border: `1px solid ${recording ? "var(--red-border)" : "var(--accent-border)"}`,
-                color: recording ? "var(--red)" : "var(--text)",
-                opacity: recording || showMicHint ? 1 : 0,
-                transform: `translateX(-50%) translateY(${recording || showMicHint ? "0px" : "4px"})`,
-              }}
-            >
-              <span className="inline-flex items-center gap-1.5">
-                {recording && (
-                  <span
-                    className="rec-pulse inline-block h-1.5 w-1.5 rounded-full"
-                    style={{ background: "var(--red)" }}
-                  />
+          <div className="flex items-center gap-2 sm:flex-none">
+            <div className="relative flex-none">
+              <div
+                className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-lg px-2.5 py-1 text-center text-[11px] whitespace-normal transition-all duration-200 sm:-top-11 sm:bottom-auto sm:mb-0 sm:max-w-none sm:whitespace-nowrap"
+                style={{
+                  background: recording
+                    ? "var(--red-soft)"
+                    : "var(--accent-soft)",
+                  border: `1px solid ${recording ? "var(--red-border)" : "var(--accent-border)"}`,
+                  color: recording ? "var(--red)" : "var(--text)",
+                  opacity: recording || showMicHint ? 1 : 0,
+                  transform: `translateX(-50%) translateY(${recording || showMicHint ? "0px" : "4px"})`,
+                }}
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  {recording && (
+                    <span
+                      className="rec-pulse inline-block h-1.5 w-1.5 rounded-full"
+                      style={{ background: "var(--red)" }}
+                    />
+                  )}
+                  {recording
+                    ? `${RELEASE_TO_STOP_LABEL} • ${formatRecordingTime(recordingSeconds)}`
+                    : HOLD_TO_RECORD_LABEL}
+                </span>
+              </div>
+
+              <button
+                onMouseDown={startRecording}
+                onMouseUp={stopRecording}
+                onMouseLeave={stopRecording}
+                onMouseEnter={() => setShowMicHint(true)}
+                onTouchStart={startRecording}
+                onTouchEnd={stopRecording}
+                onTouchCancel={stopRecording}
+                onBlur={() => setShowMicHint(false)}
+                onFocus={() => setShowMicHint(true)}
+                aria-label={
+                  recording ? RELEASE_TO_STOP_LABEL : HOLD_TO_RECORD_LABEL
+                }
+                disabled={transcribing}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all"
+                style={{
+                  background: recording ? "var(--red-soft)" : "var(--bg)",
+                  border: `1px solid ${recording ? "var(--red-border)" : "var(--border-strong)"}`,
+                  color: recording ? "var(--red)" : "var(--text-muted)",
+                  opacity: transcribing ? 0.5 : 1,
+                  cursor: transcribing ? "not-allowed" : "pointer",
+                }}
+              >
+                {recording ? (
+                  <RiStopCircleLine size={16} />
+                ) : (
+                  <RiMicLine size={16} />
                 )}
-                {recording
-                  ? `${RELEASE_TO_STOP_LABEL} • ${formatRecordingTime(recordingSeconds)}`
-                  : HOLD_TO_RECORD_LABEL}
-              </span>
+              </button>
             </div>
 
             <button
-              onMouseDown={startRecording}
-              onMouseUp={stopRecording}
-              onMouseLeave={stopRecording}
-              onMouseEnter={() => setShowMicHint(true)}
-              onTouchStart={startRecording}
-              onTouchEnd={stopRecording}
-              onTouchCancel={stopRecording}
-              onBlur={() => setShowMicHint(false)}
-              onFocus={() => setShowMicHint(true)}
-              aria-label={
-                recording ? RELEASE_TO_STOP_LABEL : HOLD_TO_RECORD_LABEL
-              }
-              disabled={transcribing}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all"
+              onClick={sendMessage}
+              disabled={loading || transcribing || !input.trim() || !sessionId}
+              className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-4 text-[13px] font-semibold text-white transition-opacity sm:flex-none"
               style={{
-                background: recording ? "var(--red-soft)" : "var(--bg)",
-                border: `1px solid ${recording ? "var(--red-border)" : "var(--border-strong)"}`,
-                color: recording ? "var(--red)" : "var(--text-muted)",
-                opacity: transcribing ? 0.5 : 1,
-                cursor: transcribing ? "not-allowed" : "pointer",
+                background: "var(--accent)",
+                opacity: loading || transcribing || !input.trim() ? 0.45 : 1,
+                cursor:
+                  loading || transcribing || !input.trim()
+                    ? "not-allowed"
+                    : "pointer",
               }}
             >
-              {recording ? (
-                <RiStopCircleLine size={16} />
-              ) : (
-                <RiMicLine size={16} />
-              )}
+              <RiSendPlane2Line size={14} />
+              {SEND_LABEL}
             </button>
           </div>
-
-          <button
-            onClick={sendMessage}
-            disabled={loading || transcribing || !input.trim() || !sessionId}
-            className="flex h-10 items-center gap-1.5 rounded-xl px-4 text-[13px] font-semibold text-white transition-opacity"
-            style={{
-              background: "var(--accent)",
-              opacity: loading || transcribing || !input.trim() ? 0.45 : 1,
-              cursor:
-                loading || transcribing || !input.trim()
-                  ? "not-allowed"
-                  : "pointer",
-            }}
-          >
-            <RiSendPlane2Line size={14} />
-            {SEND_LABEL}
-          </button>
         </div>
       </div>
     </div>

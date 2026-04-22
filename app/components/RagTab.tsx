@@ -136,26 +136,29 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       {!indexed ? (
         <>
-          <div className="flex flex-none flex-col gap-0.5">
+          <div className="flex min-w-0 flex-none flex-col gap-0.5">
             <h2
               className="text-[15px] font-semibold"
               style={{ color: "var(--text)" }}
             >
               {LABEL_HEADING}
             </h2>
-            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+            <p
+              className="break-words text-[12px]"
+              style={{ color: "var(--text-muted)" }}
+            >
               {LABEL_SUBHEADING}
             </p>
           </div>
 
-          <div className="flex flex-none gap-2">
+          <div className="flex flex-none flex-wrap gap-2">
             {(["paste", "pdf"] as InputMode[]).map((m) => {
               const active = mode === m;
               return (
                 <button
                   key={m}
                   onClick={() => setMode(m)}
-                  className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-medium transition-all"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-medium transition-all sm:flex-none"
                   style={{
                     background: active ? "var(--accent)" : "var(--bg)",
                     color: active ? "#fff" : "var(--text-muted)",
@@ -179,7 +182,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder={LABEL_PASTE_HINT}
-                className="h-full w-full resize-none rounded-xl border p-5 text-[13px] leading-relaxed outline-none transition-colors"
+                className="h-full w-full min-w-0 resize-none rounded-xl border p-4 text-[13px] leading-relaxed outline-none transition-colors sm:p-5"
                 style={{
                   background: "var(--surface-raised)",
                   border: "1px solid var(--border-strong)",
@@ -197,7 +200,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
             {mode === "pdf" && (
               <div
                 onClick={() => fileRef.current?.click()}
-                className="flex h-full cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed transition-all"
+                className="flex h-full cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-all"
                 style={{
                   borderColor: file ? "var(--accent)" : "var(--border-strong)",
                   background: file
@@ -215,13 +218,13 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                 {file ? (
                   <>
                     <p
-                      className="text-[13px] font-semibold"
+                      className="max-w-full break-words text-[13px] font-semibold"
                       style={{ color: "var(--text)" }}
                     >
                       {file.name}
                     </p>
                     <p
-                      className="text-[11px]"
+                      className="break-words text-[11px]"
                       style={{ color: "var(--text-muted)" }}
                     >
                       {(file.size / 1024).toFixed(1)} KB — {LABEL_PDF_CHANGE}
@@ -230,13 +233,13 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                 ) : (
                   <>
                     <p
-                      className="text-[13px] font-medium"
+                      className="break-words text-[13px] font-medium"
                       style={{ color: "var(--text)" }}
                     >
                       {LABEL_PDF_CLICK}
                     </p>
                     <p
-                      className="text-[11px]"
+                      className="break-words text-[11px]"
                       style={{ color: "var(--text-muted)" }}
                     >
                       {LABEL_PDF_HINT}
@@ -257,7 +260,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
           <button
             onClick={handleIndex}
             disabled={!canIndex || indexing}
-            className="flex flex-none items-center gap-1.5 self-start rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white transition-opacity"
+            className="flex w-full flex-none items-center justify-center gap-1.5 rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white transition-opacity sm:w-auto sm:self-start"
             style={{
               background: "var(--accent)",
               opacity: !canIndex || indexing ? 0.45 : 1,
@@ -271,14 +274,14 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
       ) : (
         <>
           <div
-            className="flex flex-none items-center justify-between rounded-xl px-4 py-2.5 text-[12px] font-medium"
+            className="flex flex-none flex-col gap-2 rounded-xl px-4 py-2.5 text-[12px] font-medium sm:flex-row sm:items-center sm:justify-between"
             style={{
               background: "var(--green-soft)",
               color: "var(--green)",
               border: "1px solid var(--green-border)",
             }}
           >
-            <span>{statusText}</span>
+            <span className="min-w-0 break-words">{statusText}</span>
             <button
               onClick={() => {
                 setIndexed(false);
@@ -295,7 +298,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
             </button>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          <div className="min-h-0 flex-1 overflow-y-auto pr-0 sm:pr-1">
             <div className="flex flex-col gap-3 pb-2">
               {messages.length === 0 && (
                 <div
@@ -310,7 +313,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
               {messages.map((msg, i) => (
                 <div
                   key={i}
-                  className="msg-in flex"
+                  className="msg-in flex min-w-0"
                   style={{
                     justifyContent:
                       msg.role === "user" ? "flex-end" : "flex-start",
@@ -325,7 +328,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                     </div>
                   )}
                   <div
-                    className="max-w-[72%] rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed"
+                    className="min-w-0 max-w-[88%] break-words rounded-2xl px-3 py-2.5 text-[13px] leading-relaxed sm:max-w-[78%] sm:px-4 lg:max-w-[72%]"
                     style={
                       msg.role === "user"
                         ? {
@@ -350,7 +353,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                     ) : msg.role === "assistant" &&
                       loading &&
                       i === messages.length - 1 ? (
-                      <div className="space-y-2">
+                      <div className="space-y-2 break-words">
                         <MessageContent content={msg.content} />
                         <span style={{ color: "var(--text-muted)" }}>
                           {LABEL_RETRIEVING}
@@ -359,7 +362,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                     ) : msg.role === "assistant" ? (
                       <MessageContent content={msg.content} />
                     ) : (
-                      <span className="whitespace-pre-wrap wrap-break-word">
+                      <span className="whitespace-pre-wrap break-words">
                         {msg.content}
                       </span>
                     )}
@@ -374,9 +377,9 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
             className="flex-none border-t pt-4"
             style={{ borderColor: "var(--border)" }}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <input
-                className="flex-1 rounded-xl border px-4 py-2.5 text-[13px] outline-none"
+                className="min-h-10 w-full min-w-0 flex-1 rounded-xl border px-4 py-2.5 text-[13px] outline-none"
                 style={{
                   border: "1px solid var(--border-strong)",
                   background: "var(--bg)",
@@ -390,7 +393,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
               <button
                 onClick={sendMessage}
                 disabled={loading || !input.trim()}
-                className="flex h-10 items-center gap-1.5 rounded-xl px-4 text-[13px] font-semibold text-white transition-opacity"
+                className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl px-4 text-[13px] font-semibold text-white transition-opacity sm:w-auto"
                 style={{
                   background: "var(--accent)",
                   opacity: loading || !input.trim() ? 0.45 : 1,

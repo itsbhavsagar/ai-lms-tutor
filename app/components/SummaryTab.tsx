@@ -28,7 +28,6 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
 
-  // Load summary on mount or lesson change
   useEffect(() => {
     loadSummary();
   }, [lesson.id]);
@@ -78,7 +77,7 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="flex flex-none items-center justify-between">
+      <div className="flex flex-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2
           className="text-[15px] font-semibold"
           style={{ color: "var(--text)" }}
@@ -88,7 +87,7 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
         <button
           onClick={generateSummary}
           disabled={generating}
-          className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-semibold text-white transition-opacity"
+          className="flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-semibold text-white transition-opacity sm:w-auto"
           style={{
             background: "var(--accent)",
             opacity: generating ? 0.55 : 1,
@@ -108,17 +107,17 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+      <div className="min-h-0 flex-1 overflow-y-auto pr-0 sm:pr-1">
         {loading && !summary ? (
           <div
-            className="flex h-full items-center justify-center"
+            className="flex h-full items-center justify-center text-center"
             style={{ color: "var(--text-muted)" }}
           >
             Loading...
           </div>
         ) : !generating && !summary ? (
           <div
-            className="flex h-full flex-col items-center justify-center gap-3"
+            className="flex h-full flex-col items-center justify-center gap-3 text-center"
             style={{ color: "var(--text-muted)" }}
           >
             <RiBookOpenLine size={32} style={{ opacity: 0.35 }} />
@@ -129,7 +128,7 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
         {!generating && summary && (
           <div className="flex flex-col gap-4 pb-2">
             <div
-              className="rounded-xl border p-5"
+              className="rounded-xl border p-4 sm:p-5"
               style={{
                 background: "var(--surface-raised)",
                 border: "1px solid var(--border)",
@@ -142,7 +141,7 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
                 {LABEL_OVERVIEW}
               </p>
               <p
-                className="text-[13px] leading-relaxed"
+                className="break-words text-[13px] leading-relaxed"
                 style={{ color: "var(--text)" }}
               >
                 {summary.overview}
@@ -150,7 +149,7 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
             </div>
 
             <div
-              className="rounded-xl border p-5"
+              className="rounded-xl border p-4 sm:p-5"
               style={{
                 background: "var(--surface-raised)",
                 border: "1px solid var(--border)",
@@ -172,7 +171,7 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
                       {i + 1}
                     </span>
                     <p
-                      className="text-[13px] leading-relaxed"
+                      className="min-w-0 flex-1 break-words text-[13px] leading-relaxed"
                       style={{ color: "var(--text)" }}
                     >
                       {pt}
@@ -183,7 +182,7 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
             </div>
 
             <div
-              className="rounded-xl border p-5"
+              className="rounded-xl border p-4 sm:p-5"
               style={{
                 background: "var(--accent-soft)",
                 border: "1px solid var(--accent-border)",
@@ -198,7 +197,7 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
                 {LABEL_IMPORTANT}
               </p>
               <p
-                className="text-[15px] leading-relaxed"
+                className="break-words text-[14px] leading-relaxed sm:text-[15px]"
                 style={{
                   color: "var(--text)",
                   fontFamily: "'Lora', serif",

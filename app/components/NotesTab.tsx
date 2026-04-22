@@ -20,7 +20,6 @@ export default function NotesTab({ lesson }: { lesson: Lesson }) {
 
   const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
 
-  // Load notes on component mount or lesson change
   useEffect(() => {
     loadNotes();
   }, [lesson.id]);
@@ -79,27 +78,30 @@ export default function NotesTab({ lesson }: { lesson: Lesson }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="flex flex-none items-center justify-between">
-        <div>
+      <div className="flex flex-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h2
             className="text-[15px] font-semibold"
             style={{ color: "var(--text)" }}
           >
             {LABEL_NOTES}
           </h2>
-          <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+          <p
+            className="break-words text-[12px]"
+            style={{ color: "var(--text-muted)" }}
+          >
             {lesson.title}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end sm:gap-3">
           <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
             {wordCount} {LABEL_WORDS}
           </span>
           {locked ? (
             <button
               onClick={handleEdit}
-              className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[13px] font-medium transition-colors"
+              className="flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-[13px] font-medium transition-colors"
               style={{
                 border: "1px solid var(--border-strong)",
                 color: "var(--text)",
@@ -113,7 +115,7 @@ export default function NotesTab({ lesson }: { lesson: Lesson }) {
             <button
               onClick={handleSave}
               disabled={!content.trim() || saving}
-              className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-semibold text-white transition-opacity"
+              className="flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-semibold text-white transition-opacity"
               style={{
                 background: "var(--accent)",
                 opacity: content.trim() && !saving ? 1 : 0.4,
@@ -130,14 +132,14 @@ export default function NotesTab({ lesson }: { lesson: Lesson }) {
       <div className="min-h-0 flex-1 overflow-hidden">
         {loading ? (
           <div
-            className="flex h-full items-center justify-center"
+            className="flex h-full items-center justify-center text-center"
             style={{ color: "var(--text-muted)" }}
           >
             Loading notes...
           </div>
         ) : locked ? (
           <div
-            className="h-full overflow-y-auto rounded-xl border p-5"
+            className="h-full overflow-y-auto rounded-xl border p-4 sm:p-5"
             style={{
               background: "var(--surface-raised)",
               border: "1px solid var(--border)",
@@ -158,7 +160,7 @@ export default function NotesTab({ lesson }: { lesson: Lesson }) {
             {content.split("\n").map((line, i) => (
               <p
                 key={i}
-                className="min-h-5 text-[13px] leading-relaxed"
+                className="min-h-5 break-words text-[13px] leading-relaxed"
                 style={{ color: "var(--text)" }}
               >
                 {line}
@@ -170,7 +172,7 @@ export default function NotesTab({ lesson }: { lesson: Lesson }) {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={`Write your notes about ${lesson.title}${PLACEHOLDER_SUFFIX}`}
-            className="h-full w-full resize-none rounded-xl border p-5 text-[13px] leading-relaxed outline-none transition-colors"
+            className="h-full w-full min-w-0 resize-none rounded-xl border p-4 text-[13px] leading-relaxed outline-none transition-colors sm:p-5"
             style={{
               background: "var(--surface-raised)",
               border: "1px solid var(--border-strong)",

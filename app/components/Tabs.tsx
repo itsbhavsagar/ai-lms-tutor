@@ -38,30 +38,32 @@ type Props = {
 
 export default function Tabs({ activeTab, onChange }: Props) {
   return (
-    <div className="flex items-center gap-1">
-      {TABS.map(({ id, label, Icon }) => {
-        const active = activeTab === id;
-        return (
-          <button
-            key={id}
-            onClick={() => onChange(id)}
-            className="relative flex items-center gap-1.5 px-3 py-3 text-[13px] font-medium whitespace-nowrap transition-colors duration-150"
-            style={{ color: active ? "var(--text)" : "var(--text-muted)" }}
-          >
-            <Icon size={14} />
-            <span>{label}</span>
-            <span
-              className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t-full"
-              style={{
-                background: active ? "var(--accent)" : "transparent",
-                transform: active ? "scaleX(1)" : "scaleX(0)",
-                transition: "transform 0.18s ease",
-                transformOrigin: "center",
-              }}
-            />
-          </button>
-        );
-      })}
+    <div className="-mx-4 min-w-0 overflow-x-auto px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
+      <div className="flex min-w-max items-center gap-1">
+        {TABS.map(({ id, label, Icon }) => {
+          const active = activeTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => onChange(id)}
+              className="relative flex items-center gap-1.5 px-3 py-3 text-[13px] font-medium whitespace-nowrap transition-colors duration-150"
+              style={{ color: active ? "var(--text)" : "var(--text-muted)" }}
+            >
+              <Icon size={14} />
+              <span>{label}</span>
+              <span
+                className="absolute right-0 bottom-0 left-0 h-0.5 rounded-t-full"
+                style={{
+                  background: active ? "var(--accent)" : "transparent",
+                  transform: active ? "scaleX(1)" : "scaleX(0)",
+                  transition: "transform 0.18s ease",
+                  transformOrigin: "center",
+                }}
+              />
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -186,8 +186,8 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="flex flex-none items-center justify-between">
-        <div className="flex flex-col gap-0.5">
+      <div className="flex flex-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 flex flex-col gap-0.5">
           <h2
             className="text-[15px] font-semibold"
             style={{ color: "var(--text)" }}
@@ -221,7 +221,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
         <button
           onClick={handleGenerateQuiz}
           disabled={generating}
-          className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-semibold text-white transition-opacity"
+          className="flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-semibold text-white transition-opacity sm:w-auto"
           style={{
             background: "var(--accent)",
             opacity: generating ? 0.55 : 1,
@@ -243,14 +243,14 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
 
       {loading && !questions.length ? (
         <div
-          className="flex flex-1 flex-col items-center justify-center gap-3"
+          className="flex flex-1 flex-col items-center justify-center gap-3 text-center"
           style={{ color: "var(--text-muted)" }}
         >
           Loading...
         </div>
       ) : !generating && questions.length === 0 ? (
         <div
-          className="flex flex-1 flex-col items-center justify-center gap-3"
+          className="flex flex-1 flex-col items-center justify-center gap-3 text-center"
           style={{ color: "var(--text-muted)" }}
         >
           <RiFileTextLine size={32} style={{ opacity: 0.35 }} />
@@ -260,14 +260,14 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
 
       {showResult && quizData && (
         <div
-          className="w-full flex-none rounded-xl border p-6 text-center"
+          className="w-full flex-none rounded-xl border p-4 text-center sm:p-6"
           style={{
             background: "var(--accent-soft)",
             border: "1px solid var(--accent-border)",
           }}
         >
           <p
-            className="mb-1 text-5xl font-bold"
+            className="mb-1 text-4xl font-bold sm:text-5xl"
             style={{ fontFamily: "'Lora', serif", color: "var(--text)" }}
           >
             {pct}%
@@ -288,7 +288,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
       )}
 
       {!generating && questions.length > 0 && (
-        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+        <div className="min-h-0 flex-1 overflow-y-auto pr-0 sm:pr-1">
           <div className="flex flex-col gap-4 pb-2">
             {previousAttempts.length > 1 && submitted && (
               <div
@@ -309,7 +309,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
                   {previousAttempts.map((a, i) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between text-[12px]"
+                      className="flex items-center justify-between gap-3 text-[12px]"
                       style={{ color: "var(--text-muted)" }}
                     >
                       <span>Attempt {i + 1}</span>
@@ -333,7 +333,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
             {questions.map((q, qIndex) => (
               <div
                 key={qIndex}
-                className="rounded-xl border p-5"
+                className="rounded-xl border p-4 sm:p-5"
                 style={{
                   background: "var(--surface-raised)",
                   border: "1px solid var(--border)",
@@ -349,7 +349,9 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
                   >
                     {qIndex + 1}
                   </span>
-                  {q.question}
+                  <span className="min-w-0 flex-1 break-words">
+                    {q.question}
+                  </span>
                 </p>
 
                 <div className="flex flex-col gap-2">
@@ -390,7 +392,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
                       <button
                         key={oIndex}
                         onClick={() => selectOption(qIndex, oIndex)}
-                        className="flex w-full items-center justify-between rounded-lg border px-4 py-2.5 text-left text-[13px] leading-snug transition-all duration-100"
+                        className="flex w-full items-start justify-between gap-3 rounded-lg border px-4 py-2.5 text-left text-[13px] leading-snug transition-all duration-100"
                         style={{
                           background: bg,
                           border: `1px solid ${border}`,
@@ -398,8 +400,10 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
                           cursor: submitted ? "default" : "pointer",
                         }}
                       >
-                        <span>{option}</span>
-                        {Icon && <span className="shrink-0">{Icon}</span>}
+                        <span className="min-w-0 flex-1 break-words">
+                          {option}
+                        </span>
+                        {Icon && <span className="mt-0.5 shrink-0">{Icon}</span>}
                       </button>
                     );
                   })}
@@ -411,7 +415,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
               <button
                 onClick={handleSubmitQuiz}
                 disabled={answered < questions.length}
-                className="self-start rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white transition-opacity"
+                className="w-full rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white transition-opacity sm:w-auto sm:self-start"
                 style={{
                   background: "var(--accent)",
                   opacity: answered < questions.length ? 0.4 : 1,
