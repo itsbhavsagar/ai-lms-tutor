@@ -1,7 +1,6 @@
 "use client";
-import { useState } from "react";
-import { lessons, Lesson } from "./data/lessons";
-import Tabs, { TabType } from "./components/Tabs";
+import { lessons } from "./data/lessons";
+import Tabs from "./components/Tabs";
 import ChatTab from "./components/ChatTab";
 import QuizTab from "./components/QuizTab";
 import SummaryTab from "./components/SummaryTab";
@@ -9,6 +8,7 @@ import NotesTab from "./components/NotesTab";
 import RagTab from "./components/RagTab";
 import DemoTab from "./components/DemoTab";
 import { RiGraduationCapLine } from "react-icons/ri";
+import { useAppNavigation } from "@/lib/hooks/useAppNavigation";
 
 const TAB_SUBTITLE =
   "AI-powered learning — ask questions, take quizzes, and review summaries.";
@@ -19,13 +19,13 @@ const BUILT_BY =
   "Built by Bhavsagar · Next.js · Groq · Cohere · PostgresSQL · Prisma";
 
 export default function Home() {
-  const [selectedLesson, setSelectedLesson] = useState<Lesson>(lessons[0]);
-  const [activeTab, setActiveTab] = useState<TabType>("chat");
-
-  function selectLesson(lesson: Lesson) {
-    setSelectedLesson(lesson);
-    setActiveTab("chat");
-  }
+  const {
+    activeTab,
+    selectedLesson,
+    selectLesson,
+    handleTabChange,
+    isClientReady,
+  } = useAppNavigation();
 
   return (
     <div className="flex h-full w-full min-w-0 flex-col overflow-hidden md:flex-row">
@@ -33,8 +33,8 @@ export default function Home() {
         className="flex max-h-[42dvh] w-full flex-none flex-col overflow-hidden md:h-full md:max-h-none md:w-64 lg:w-72"
         style={{
           background: "var(--bg-sidebar)",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          borderRight: "1px solid var(--sidebar-border)",
+          borderBottom: "1px solid var(--sidebar-border)",
         }}
       >
         <div className="flex items-center gap-2.5 px-4 py-4 sm:px-5 md:pt-6 md:pb-5">
@@ -42,7 +42,7 @@ export default function Home() {
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
             style={{ background: "var(--accent)" }}
           >
-            <RiGraduationCapLine size={16} color="#fff" />
+            <RiGraduationCapLine size={16} color="var(--on-accent)" />
           </div>
           <div className="min-w-0">
             <p
@@ -75,12 +75,14 @@ export default function Home() {
                 <button
                   key={lesson.id}
                   onClick={() => selectLesson(lesson)}
-                  className="min-w-44 flex-none rounded-lg px-3 py-2 text-left text-[13px] font-medium transition-colors duration-150 md:w-full md:min-w-0"
+                  className="min-w-44 flex-none rounded-lg px-3 py-2.5 text-left text-[13px] font-medium transition-colors duration-200 md:w-full md:min-w-0"
                   style={{
                     background: active
-                      ? "rgba(255,255,255,0.06)"
+                      ? "var(--bg-sidebar-active)"
                       : "transparent",
-                    color: active ? "#fff" : "var(--text-sidebar)",
+                    color: active
+                      ? "var(--text-sidebar-active)"
+                      : "var(--text-sidebar)",
                   }}
                 >
                   {lesson.title}
@@ -92,7 +94,7 @@ export default function Home() {
 
         <div
           className="border-t px-4 py-2 sm:px-5 md:py-4"
-          style={{ borderColor: "rgba(255,255,255,0.07)" }}
+          style={{ borderColor: "var(--sidebar-border)" }}
         >
           <p
             className="line-clamp-2 text-[10px] leading-relaxed md:line-clamp-none"
@@ -125,12 +127,20 @@ export default function Home() {
               {TAB_SUBTITLE}
             </p>
           </div>
-          <Tabs activeTab={activeTab} onChange={setActiveTab} />
+          <Tabs
+            activeTab={activeTab}
+            onChange={handleTabChange}
+            showActiveIndicator={isClientReady}
+          />
         </div>
 
         <div className="min-h-0 flex-1 overflow-hidden p-3 sm:p-4 md:p-6">
           <div
-            className="flex h-full min-h-0 flex-col rounded-lg p-3 sm:rounded-xl sm:p-4 md:p-6"
+            className={`flex h-full min-h-0 flex-col rounded-lg ${
+              activeTab === "chat"
+                ? "overflow-hidden p-0"
+                : "p-3 sm:rounded-xl sm:p-4 md:p-6"
+            }`}
             style={{
               background: "var(--bg-panel)",
               border: "1px solid var(--border)",

@@ -32,17 +32,36 @@ export async function createSession(
   }
 }
 
-export async function getUserSessions(userId: string) {
-  return prisma.session.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
+export async function getUserSessions(userId: string, lessonId?: string) {
+  const sessions = await prisma.session.findMany({
+    where: {
+      userId,
+      ...(lessonId ? { lessonId } : {}),
+    },
+    orderBy: { updatedAt: "desc" },
     include: {
-      messages: true,
+      messages: {
+        where: { role: "user" },
+        orderBy: { createdAt: "asc" },
+        take: 1,
+      },
+      _count: { select: { messages: true } },
     },
   });
+
+  return sessions.map((session) => ({
+    id: session.id,
+    lessonId: session.lessonId,
+    title: session.title,
+    createdAt: session.createdAt,
+    updatedAt: session.updatedAt,
+    messageCount: session._count.messages,
+    preview: session.messages[0]?.content ?? null,
+  }));
 }
 
 export async function deleteSession(sessionId: string) {
+  await prisma.message.deleteMany({ where: { sessionId } });
   return prisma.session.delete({
     where: { id: sessionId },
   });

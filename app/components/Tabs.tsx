@@ -34,19 +34,24 @@ const TABS: TabDef[] = [
 type Props = {
   activeTab: TabType;
   onChange: (tab: TabType) => void;
+  showActiveIndicator?: boolean;
 };
 
-export default function Tabs({ activeTab, onChange }: Props) {
+export default function Tabs({
+  activeTab,
+  onChange,
+  showActiveIndicator = true,
+}: Props) {
   return (
     <div className="-mx-4 min-w-0 overflow-x-auto px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
       <div className="flex min-w-max items-center gap-1">
         {TABS.map(({ id, label, Icon }) => {
-          const active = activeTab === id;
+          const active = showActiveIndicator && activeTab === id;
           return (
             <button
               key={id}
               onClick={() => onChange(id)}
-              className="relative flex items-center gap-1.5 px-3 py-3 text-[13px] font-medium whitespace-nowrap transition-colors duration-150"
+              className="relative flex items-center gap-1.5 px-3 py-3 text-[13px] font-medium whitespace-nowrap transition-colors duration-200"
               style={{ color: active ? "var(--text)" : "var(--text-muted)" }}
             >
               <Icon size={14} />
@@ -56,7 +61,7 @@ export default function Tabs({ activeTab, onChange }: Props) {
                 style={{
                   background: active ? "var(--accent)" : "transparent",
                   transform: active ? "scaleX(1)" : "scaleX(0)",
-                  transition: "transform 0.18s ease",
+                  transition: "transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)",
                   transformOrigin: "center",
                 }}
               />

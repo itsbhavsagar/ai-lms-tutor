@@ -53,6 +53,26 @@ export async function apiPost<T>(
   return res.json() as Promise<T>;
 }
 
+export async function apiPatch<T>(
+  url: string,
+  body: unknown,
+  fallback: string,
+): Promise<T> {
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  await throwIfNotOk(res, fallback);
+  return res.json() as Promise<T>;
+}
+
+export async function apiDelete<T>(url: string, fallback: string): Promise<T> {
+  const res = await fetch(url, { method: "DELETE" });
+  await throwIfNotOk(res, fallback);
+  return res.json() as Promise<T>;
+}
+
 export async function apiPostForm<T>(
   url: string,
   formData: FormData,
@@ -84,13 +104,31 @@ export async function readTextStream(
   const reader = response.body!.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let scheduled = false;
+  let rafId = 0;
+
+  const flush = () => {
+    scheduled = false;
+    onChunk(buffer);
+  };
+
+  const scheduleFlush = () => {
+    if (scheduled) return;
+    scheduled = true;
+    rafId = requestAnimationFrame(flush);
+  };
 
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
-    onChunk(buffer);
+    scheduleFlush();
   }
+
+  if (scheduled) {
+    cancelAnimationFrame(rafId);
+  }
+  onChunk(buffer);
 
   return buffer;
 }

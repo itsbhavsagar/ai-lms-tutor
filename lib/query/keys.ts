@@ -10,4 +10,6 @@ export const queryKeys = {
     [...queryKeys.all, "messages", sessionId] as const,
   ragIndex: (userId: string, lessonId: string) =>
     [...queryKeys.all, "rag-index", userId, lessonId] as const,
+  sessions: (userId: string, lessonId: string) =>
+    [...queryKeys.all, "sessions", userId, lessonId] as const,
 };

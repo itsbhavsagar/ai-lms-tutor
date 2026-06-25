@@ -10,61 +10,62 @@ datasource db {
 model User {
   id        String     @id @default(cuid())
   email     String     @unique
-  sessions  Session[]
+  createdAt DateTime   @default(now())
   documents Document[]
   notes     Note[]
-  summaries Summary[]
   quizzes   Quiz[]
-  createdAt DateTime   @default(now())
+  sessions  Session[]
+  summaries Summary[]
 }
 
 model Session {
   id        String    @id @default(cuid())
   userId    String
-  user      User      @relation(fields: [userId], references: [id])
   lessonId  String
   title     String?
-  messages  Message[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  messages  Message[]
+  user      User      @relation(fields: [userId], references: [id])
 }
 
 model Message {
   id        String   @id @default(cuid())
   sessionId String
-  session   Session  @relation(fields: [sessionId], references: [id])
   role      String
   content   String
   createdAt DateTime @default(now())
+  session   Session  @relation(fields: [sessionId], references: [id])
 }
 
 model Document {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
   lessonId  String
   title     String
-  chunks    Chunk[]
   createdAt DateTime @default(now())
+  chunks    Chunk[]
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Chunk {
   id         String   @id @default(cuid())
   documentId String
-  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   text       String
   embedding  Float[]
   createdAt  DateTime @default(now())
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 }
 
 model Note {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   lessonId  String
+  title     String   @default("")
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, lessonId])
 }
@@ -72,10 +73,10 @@ model Note {
 model Summary {
   id          String   @id @default(cuid())
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   lessonId    String
   summaryText String
   createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, lessonId])
 }
@@ -83,11 +84,11 @@ model Summary {
 model Quiz {
   id        String        @id @default(cuid())
   userId    String
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   lessonId  String
   questions Json
-  attempts  QuizAttempt[]
   createdAt DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempts  QuizAttempt[]
 
   @@index([userId, lessonId])
 }
@@ -95,10 +96,10 @@ model Quiz {
 model QuizAttempt {
   id        String   @id @default(cuid())
   quizId    String
-  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
   score     Int
   total     Int
   createdAt DateTime @default(now())
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
   @@index([quizId])
 }

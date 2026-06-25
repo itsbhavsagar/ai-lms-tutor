@@ -9,6 +9,10 @@ import {
   useGenerateSummaryMutation,
   useSummaryQuery,
 } from "@/lib/hooks/queries/useSummary";
+import EmptyState from "./ui/EmptyState";
+import PrimaryButton from "./ui/PrimaryButton";
+import { SkeletonSummary } from "./ui/Skeleton";
+import { cardClass, panelHeadingClass } from "@/lib/ui/styles";
 
 const LABEL_GENERATE = "Generate Summary";
 const LABEL_REGENERATE = "Regenerate";
@@ -30,20 +34,15 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <div className="flex flex-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2
-          className="text-[15px] font-semibold"
+          className={panelHeadingClass}
           style={{ color: "var(--text)" }}
         >
           {generating ? LABEL_GENERATING : LABEL_HEADING}
         </h2>
-        <button
+        <PrimaryButton
           onClick={() => generateMutation.mutate()}
           disabled={generating}
-          className="flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-semibold text-white transition-opacity sm:w-auto"
-          style={{
-            background: "var(--accent)",
-            opacity: generating ? 0.55 : 1,
-            cursor: generating ? "not-allowed" : "pointer",
-          }}
+          fullWidth
         >
           {summary ? (
             <RiRefreshLine size={14} />
@@ -55,38 +54,28 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
             : summary
               ? LABEL_REGENERATE
               : LABEL_GENERATE}
-        </button>
+        </PrimaryButton>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pr-0 sm:pr-1">
         {isLoading && !summary ? (
-          <div
-            className="flex h-full items-center justify-center text-center"
-            style={{ color: "var(--text-muted)" }}
-          >
-            Loading...
-          </div>
+          <SkeletonSummary />
+        ) : generating && !summary ? (
+          <SkeletonSummary />
         ) : !generating && !summary ? (
-          <div
-            className="flex h-full flex-col items-center justify-center gap-3 text-center"
-            style={{ color: "var(--text-muted)" }}
-          >
-            <RiBookOpenLine size={32} style={{ opacity: 0.35 }} />
-            <p className="text-[13px]">{LABEL_EMPTY}</p>
-          </div>
+          <EmptyState
+            icon={<RiBookOpenLine size={22} />}
+            title="No summary yet"
+            description={LABEL_EMPTY}
+            fill
+          />
         ) : null}
 
         {!generating && summary && (
           <div className="flex flex-col gap-4 pb-2">
-            <div
-              className="rounded-xl border p-4 sm:p-5"
-              style={{
-                background: "var(--surface-raised)",
-                border: "1px solid var(--border)",
-              }}
-            >
+            <div className={`${cardClass} flex flex-col gap-3`}>
               <p
-                className="mb-2 text-[10px] font-semibold uppercase tracking-widest"
+                className="text-[10px] font-semibold uppercase tracking-widest"
                 style={{ color: "var(--text-muted)" }}
               >
                 {LABEL_OVERVIEW}
@@ -99,13 +88,7 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
               </p>
             </div>
 
-            <div
-              className="rounded-xl border p-4 sm:p-5"
-              style={{
-                background: "var(--surface-raised)",
-                border: "1px solid var(--border)",
-              }}
-            >
+            <div className={`${cardClass} flex flex-col gap-4`}>
               <p
                 className="mb-4 text-[10px] font-semibold uppercase tracking-widest"
                 style={{ color: "var(--text-muted)" }}

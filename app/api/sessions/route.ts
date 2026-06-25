@@ -1,7 +1,6 @@
 import {
   createSession,
   getUserSessions,
-  deleteSession,
 } from "@/lib/db/session";
 import { validateSessionRequest } from "@/lib/utils/validation";
 import { jsonApiError } from "@/lib/utils/apiError";
@@ -58,6 +57,8 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const userId = url.searchParams.get("userId");
 
+    const lessonId = url.searchParams.get("lessonId");
+
     if (!userId) {
       return Response.json(
         {
@@ -69,8 +70,7 @@ export async function GET(req: Request) {
       );
     }
 
-    // List sessions
-    const sessions = await getUserSessions(userId);
+    const sessions = await getUserSessions(userId, lessonId ?? undefined);
 
     return Response.json(
       {
@@ -87,52 +87,5 @@ export async function GET(req: Request) {
   } catch (error) {
     console.error("Session list error:", error);
     return jsonApiError(error, "Failed to list sessions");
-  }
-}
-
-export async function DELETE(req: Request) {
-  try {
-    // Rate limiting
-    const rateLimitResult = RATE_LIMITS.api(req);
-    if (!rateLimitResult.allowed) {
-      return createRateLimitResponse(
-        rateLimitResult.remaining,
-        rateLimitResult.resetTime,
-      );
-    }
-
-    // Extract sessionId from URL path
-    const url = new URL(req.url);
-    const pathParts = url.pathname.split("/");
-    const sessionId = pathParts[pathParts.length - 1];
-
-    if (!sessionId || sessionId === "sessions") {
-      return Response.json(
-        {
-          error: "sessionId is required in URL path",
-        },
-        {
-          status: 400,
-        },
-      );
-    }
-
-    // Delete session
-    await deleteSession(sessionId);
-
-    return Response.json(
-      {
-        success: true,
-        message: "Session deleted",
-      },
-      {
-        headers: {
-          "X-RateLimit-Remaining": String(rateLimitResult.remaining),
-        },
-      },
-    );
-  } catch (error) {
-    console.error("Session delete error:", error);
-    return jsonApiError(error, "Failed to delete session");
   }
 }

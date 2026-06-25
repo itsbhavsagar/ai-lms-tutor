@@ -19,6 +19,10 @@ import {
 import { showError } from "@/lib/utils/toast";
 import { getOrCreateUserId } from "@/lib/utils/localStorage";
 import MessageContent from "./MessageContent";
+import ChatThinkingIndicator from "./chat/ChatThinkingIndicator";
+import EmptyState from "./ui/EmptyState";
+import PrimaryButton from "./ui/PrimaryButton";
+import { btnInteractive, panelHeadingClass } from "@/lib/ui/styles";
 
 type InputMode = "paste" | "pdf";
 
@@ -136,7 +140,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
         <>
           <div className="flex min-w-0 flex-none flex-col gap-0.5">
             <h2
-              className="text-[15px] font-semibold"
+              className={panelHeadingClass}
               style={{ color: "var(--text)" }}
             >
               {LABEL_HEADING}
@@ -156,10 +160,10 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                 <button
                   key={m}
                   onClick={() => setMode(m)}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-medium transition-all sm:flex-none"
+                  className={`${btnInteractive} flex flex-1 items-center justify-center gap-1.5 rounded-xl border px-4 py-2 text-[13px] font-medium sm:flex-none`}
                   style={{
-                    background: active ? "var(--accent)" : "var(--bg)",
-                    color: active ? "#fff" : "var(--text-muted)",
+                    background: active ? "var(--accent)" : "var(--surface-raised)",
+                    color: active ? "var(--on-accent)" : "var(--text-muted)",
                     border: `1px solid ${active ? "var(--accent)" : "var(--border-strong)"}`,
                   }}
                 >
@@ -255,19 +259,15 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
             )}
           </div>
 
-          <button
+          <PrimaryButton
             onClick={handleIndex}
             disabled={!canIndex || indexing}
-            className="flex w-full flex-none items-center justify-center gap-1.5 rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white transition-opacity sm:w-auto sm:self-start"
-            style={{
-              background: "var(--accent)",
-              opacity: !canIndex || indexing ? 0.45 : 1,
-              cursor: !canIndex || indexing ? "not-allowed" : "pointer",
-            }}
+            fullWidth
+            className="sm:self-start"
           >
             <RiFlashlightLine size={14} />
             {indexing ? LABEL_INDEXING : LABEL_INDEX}
-          </button>
+          </PrimaryButton>
         </>
       ) : (
         <>
@@ -296,13 +296,12 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
           <div className="min-h-0 flex-1 overflow-y-auto pr-0 sm:pr-1">
             <div className="flex flex-col gap-3 pb-2">
               {messages.length === 0 && (
-                <div
-                  className="mt-16 flex flex-col items-center gap-3 text-center"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  <RiFlashlightLine size={32} style={{ opacity: 0.35 }} />
-                  <p className="text-[13px]">{LABEL_EMPTY_CHAT}</p>
-                </div>
+                <EmptyState
+                  icon={<RiFlashlightLine size={22} />}
+                  title="Ready to chat"
+                  description={LABEL_EMPTY_CHAT}
+                  fill
+                />
               )}
 
               {messages.map((msg, i) => (
@@ -327,8 +326,8 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                     style={
                       msg.role === "user"
                         ? {
-                            background: "var(--text)",
-                            color: "#fff",
+                            background: "var(--chat-user-bg)",
+                            color: "var(--chat-user-fg)",
                             borderBottomRightRadius: 4,
                           }
                         : {
@@ -340,11 +339,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                     }
                   >
                     {msg.content === "" ? (
-                      <span className="flex items-center gap-1 py-0.5">
-                        <span className="dot dot-1" />
-                        <span className="dot dot-2" />
-                        <span className="dot dot-3" />
-                      </span>
+                      <ChatThinkingIndicator label="Answering" />
                     ) : msg.role === "assistant" &&
                       loading &&
                       i === messages.length - 1 ? (
@@ -377,7 +372,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                 className="min-h-10 w-full min-w-0 flex-1 rounded-xl border px-4 py-2.5 text-[13px] outline-none"
                 style={{
                   border: "1px solid var(--border-strong)",
-                  background: "var(--bg)",
+                  background: "var(--input-bg)",
                   color: "var(--text)",
                 }}
                 value={input}
@@ -385,19 +380,14 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                 onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                 placeholder={PLACEHOLDER_INPUT}
               />
-              <button
+              <PrimaryButton
                 onClick={sendMessage}
                 disabled={loading || !input.trim()}
-                className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl px-4 text-[13px] font-semibold text-white transition-opacity sm:w-auto"
-                style={{
-                  background: "var(--accent)",
-                  opacity: loading || !input.trim() ? 0.45 : 1,
-                  cursor: loading || !input.trim() ? "not-allowed" : "pointer",
-                }}
+                fullWidth
               >
                 <RiSendPlane2Line size={14} />
                 {LABEL_ASK}
-              </button>
+              </PrimaryButton>
             </div>
           </div>
         </>

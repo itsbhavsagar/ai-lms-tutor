@@ -13,6 +13,10 @@ export function showError(message: string) {
   toast.error(extractErrorMessage(message));
 }
 
+export function showSuccess(message: string) {
+  toast.success(message);
+}
+
 export async function toastApiError(
   res: Response,
   fallback?: string,

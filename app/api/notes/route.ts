@@ -1,5 +1,14 @@
 import { prisma } from "@/lib/db/prisma";
+import { deriveNoteTitle } from "@/lib/notes/title";
 import { jsonApiError } from "@/lib/utils/apiError";
+
+async function ensureUser(userId: string) {
+  await prisma.user.upsert({
+    where: { id: userId },
+    update: {},
+    create: { id: userId, email: `${userId}@temp.local` },
+  });
+}
 
 export async function GET(req: Request) {
   try {
@@ -14,14 +23,12 @@ export async function GET(req: Request) {
       );
     }
 
-    const note = await prisma.note.findFirst({
-      where: {
-        userId,
-        lessonId,
-      },
+    const notes = await prisma.note.findMany({
+      where: { userId, lessonId },
+      orderBy: { updatedAt: "desc" },
     });
 
-    return Response.json({ note: note || null });
+    return Response.json({ notes });
   } catch (error) {
     console.error("[Notes] GET error:", error);
     return jsonApiError(error, "Failed to load notes");
@@ -30,7 +37,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { userId, lessonId, content } = await req.json();
+    const { userId, lessonId, title, content } = await req.json();
 
     if (!userId || !lessonId) {
       return Response.json(
@@ -39,43 +46,69 @@ export async function POST(req: Request) {
       );
     }
 
-    // Ensure user exists in database
-    await prisma.user.upsert({
-      where: { id: userId },
-      update: {},
-      create: { id: userId, email: `${userId}@temp.local` },
-    });
+    await ensureUser(userId);
 
-    // Find existing note
-    const existing = await prisma.note.findFirst({
-      where: {
+    const body = typeof content === "string" ? content : "";
+    const note = await prisma.note.create({
+      data: {
         userId,
         lessonId,
+        title: deriveNoteTitle(title, body),
+        content: body,
       },
     });
 
-    if (existing) {
-      // Update existing note
-      const updated = await prisma.note.update({
-        where: { id: existing.id },
-        data: { content },
-      });
-      console.log(`[Notes] Updated note: ${updated.id}`);
-      return Response.json({ note: updated });
-    } else {
-      // Create new note
-      const note = await prisma.note.create({
-        data: {
-          userId,
-          lessonId,
-          content: content || "",
-        },
-      });
-      console.log(`[Notes] Created note: ${note.id}`);
-      return Response.json({ note });
-    }
+    console.log(`[Notes] Created note: ${note.id}`);
+    return Response.json({ note });
   } catch (error) {
     console.error("[Notes] POST error:", error);
-    return jsonApiError(error, "Failed to save notes");
+    return jsonApiError(error, "Failed to create note");
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const { noteId, title, content } = await req.json();
+
+    if (!noteId) {
+      return Response.json({ error: "noteId is required" }, { status: 400 });
+    }
+
+    if (typeof content !== "string") {
+      return Response.json({ error: "content is required" }, { status: 400 });
+    }
+
+    const note = await prisma.note.update({
+      where: { id: noteId },
+      data: {
+        title: deriveNoteTitle(title, content),
+        content,
+      },
+    });
+
+    console.log(`[Notes] Updated note: ${note.id}`);
+    return Response.json({ note });
+  } catch (error) {
+    console.error("[Notes] PATCH error:", error);
+    return jsonApiError(error, "Failed to save note");
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const noteId = url.searchParams.get("noteId");
+
+    if (!noteId) {
+      return Response.json({ error: "noteId is required" }, { status: 400 });
+    }
+
+    await prisma.note.delete({ where: { id: noteId } });
+
+    console.log(`[Notes] Deleted note: ${noteId}`);
+    return Response.json({ success: true });
+  } catch (error) {
+    console.error("[Notes] DELETE error:", error);
+    return jsonApiError(error, "Failed to delete note");
   }
 }

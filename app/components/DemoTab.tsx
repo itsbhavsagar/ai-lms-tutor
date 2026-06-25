@@ -110,8 +110,8 @@ const DemoTab = (): JSX.Element => {
                 style={
                   msg.role === "user"
                     ? {
-                        background: "var(--text)",
-                        color: "#fff",
+                        background: "var(--chat-user-bg)",
+                        color: "var(--chat-user-fg)",
                         borderBottomRightRadius: 4,
                       }
                     : {
@@ -151,7 +151,7 @@ const DemoTab = (): JSX.Element => {
             className="min-h-10 w-full min-w-0 flex-1 rounded-xl border px-4 py-2.5 text-[13px] outline-none"
             style={{
               border: "1px solid var(--border-strong)",
-              background: "var(--bg)",
+              background: "var(--input-bg)",
               color: "var(--text)",
             }}
             value={input}

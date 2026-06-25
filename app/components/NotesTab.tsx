@@ -1,160 +1,454 @@
 "use client";
-import { useEffect, useState } from "react";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Lesson } from "../data/lessons";
-import { RiPencilLine, RiSaveLine, RiStickyNoteLine } from "react-icons/ri";
 import {
+  RiAddLine,
+  RiArrowLeftLine,
+  RiCloseLine,
+  RiDeleteBinLine,
+  RiPencilLine,
+  RiSaveLine,
+  RiStickyNoteLine,
+} from "react-icons/ri";
+import {
+  deriveNoteTitle,
+  formatNoteDate,
+  type NoteItem,
+} from "@/lib/api/notes";
+import {
+  useCreateNoteMutation,
+  useDeleteNoteMutation,
   useNotesQuery,
-  useSaveNoteMutation,
+  useUpdateNoteMutation,
 } from "@/lib/hooks/queries/useNotes";
+import {
+  confirmDiscardDraft,
+  createDraftNoteId,
+  hasDraftContent,
+  isDraftNoteId,
+} from "@/lib/notes/draft";
+import { showSuccess } from "@/lib/utils/toast";
+import NoteCard from "./notes/NoteCard";
+import EmptyState from "./ui/EmptyState";
+import { SkeletonNoteGrid } from "./ui/Skeleton";
+import { btnInteractive, panelHeadingClass, panelSubtextClass } from "@/lib/ui/styles";
 
-const LABEL_SAVE = "Save Notes";
-const LABEL_EDIT = "Edit";
 const LABEL_NOTES = "Notes";
-const LABEL_SAVED = "Saved Notes";
+const LABEL_NEW = "New Note";
+const LABEL_CANCEL = "Cancel";
+const LABEL_SAVE = "Save";
+const LABEL_EDIT = "Edit";
+const LABEL_DELETE = "Delete";
 const LABEL_WORDS = "words";
-const PLACEHOLDER_SUFFIX =
-  " here…\n\nTip: Summarize key points in your own words — it helps you remember better.";
+const LABEL_EMPTY_LIST = "No notes yet";
+const LABEL_EMPTY_HINT =
+  "Create a note to capture your understanding of this lesson.";
+const LABEL_SELECT_HINT = "Select a note or create a new one";
+const PLACEHOLDER =
+  "Start with a title line, then write your notes…\n\nTip: Summarize key points in your own words — it helps you remember better.";
 
-export default function NotesTab({ lesson }: { lesson: Lesson }) {
-  const { data, isLoading } = useNotesQuery(lesson.id);
-  const saveMutation = useSaveNoteMutation(lesson.id);
+type NotesTabProps = {
+  lesson: Lesson;
+};
 
+export default function NotesTab({ lesson }: NotesTabProps) {
+  const { data, isLoading, isFetching } = useNotesQuery(lesson.id);
+  const createMutation = useCreateNoteMutation(lesson.id);
+  const updateMutation = useUpdateNoteMutation(lesson.id);
+  const deleteMutation = useDeleteNoteMutation(lesson.id);
+
+  const notes = data?.notes ?? [];
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [locked, setLocked] = useState(false);
+  const [mobileShowEditor, setMobileShowEditor] = useState(false);
 
+  const isDraft = isDraftNoteId(selectedId);
+  const selectedNote = useMemo(
+    () => (isDraft ? null : notes.find((n) => n.id === selectedId) ?? null),
+    [notes, selectedId, isDraft],
+  );
   const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
+  const isSaving = updateMutation.isPending || createMutation.isPending;
+
+  const resetEditor = useCallback(() => {
+    setSelectedId(null);
+    setTitle("");
+    setContent("");
+    setLocked(false);
+    setMobileShowEditor(false);
+  }, []);
 
   useEffect(() => {
-    if (!data) return;
-    setContent(data.note?.content ?? "");
-    setLocked(!!data.note);
-  }, [lesson.id, data]);
+    resetEditor();
+  }, [lesson.id, resetEditor]);
 
-  function handleSave() {
-    if (!content.trim()) return;
-    saveMutation.mutate(content, {
-      onSuccess: () => setLocked(true),
-    });
-  }
+  useEffect(() => {
+    if (!selectedId || isDraft) return;
+    if (!notes.some((n) => n.id === selectedId)) {
+      resetEditor();
+    }
+  }, [notes, selectedId, isDraft, resetEditor]);
 
-  function handleEdit() {
+  const selectNote = useCallback(
+    (note: NoteItem) => {
+      if (note.id === selectedId && locked && !isDraft) {
+        resetEditor();
+        return;
+      }
+
+      setSelectedId(note.id);
+      setTitle(note.title);
+      setContent(note.content);
+      setLocked(true);
+      setMobileShowEditor(true);
+    },
+    [selectedId, locked, isDraft, resetEditor],
+  );
+
+  const handleNewNote = useCallback(() => {
+    setSelectedId(createDraftNoteId());
+    setTitle("");
+    setContent("");
     setLocked(false);
-  }
+    setMobileShowEditor(true);
+  }, []);
+
+  const handleCancelDraft = useCallback(() => {
+    if (!isDraft || !selectedId) return;
+
+    if (hasDraftContent(title, content)) {
+      confirmDiscardDraft(resetEditor);
+      return;
+    }
+
+    resetEditor();
+  }, [isDraft, selectedId, content, title, resetEditor]);
+
+  const handleSave = useCallback(() => {
+    if (!selectedId || !content.trim()) return;
+
+    const resolvedTitle = deriveNoteTitle(title, content);
+    const trimmedContent = content.trim();
+
+    if (isDraft) {
+      createMutation.mutate(
+        { title: resolvedTitle, content: trimmedContent },
+        {
+          onSuccess: (result) => {
+            setSelectedId(result.note.id);
+            setTitle(result.note.title);
+            setContent(result.note.content);
+            setLocked(true);
+            showSuccess("Note saved");
+          },
+        },
+      );
+      return;
+    }
+
+    updateMutation.mutate(
+      {
+        noteId: selectedId,
+        title: resolvedTitle,
+        content: trimmedContent,
+      },
+      {
+        onSuccess: (result) => {
+          setTitle(result.note.title);
+          setContent(result.note.content);
+          setLocked(true);
+          showSuccess("Note saved");
+        },
+      },
+    );
+  }, [selectedId, content, title, isDraft, createMutation, updateMutation]);
+
+  const performDelete = useCallback(
+    (noteId: string) => {
+      if (isDraftNoteId(noteId)) {
+        resetEditor();
+        showSuccess("Draft discarded");
+        return;
+      }
+
+      deleteMutation.mutate(noteId, {
+        onSuccess: () => {
+          if (selectedId === noteId) resetEditor();
+          showSuccess("Note deleted");
+        },
+      });
+    },
+    [deleteMutation, resetEditor, selectedId],
+  );
+
+  const handleDelete = useCallback(() => {
+    if (!selectedId) return;
+
+    const noteTitle = deriveNoteTitle(title, content);
+
+    if (isDraft) {
+      confirmDiscardDraft(() => performDelete(selectedId));
+      return;
+    }
+
+    toast(`Delete "${noteTitle}"?`, {
+      description: "This cannot be undone.",
+      action: {
+        label: "Delete",
+        onClick: () => performDelete(selectedId),
+      },
+    });
+  }, [selectedId, title, content, isDraft, performDelete]);
+
+  const showEditor = selectedId !== null;
+  const hasSavedNoteSelected = selectedId !== null && !isDraft;
+  const dateLabel = isDraft
+    ? "New note"
+    : selectedNote
+      ? formatNoteDate(selectedNote.updatedAt)
+      : "";
+
+  const noteCountLabel =
+    isDraft && notes.length === 0
+      ? "1 draft"
+      : isDraft
+        ? `${notes.length} saved + 1 draft`
+        : `${notes.length} ${notes.length === 1 ? "note" : "notes"}`;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="flex flex-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h2
-            className="text-[15px] font-semibold"
+            className={panelHeadingClass}
             style={{ color: "var(--text)" }}
           >
             {LABEL_NOTES}
           </h2>
           <p
-            className="break-words text-[12px]"
+            className={`truncate ${panelSubtextClass}`}
             style={{ color: "var(--text-muted)" }}
           >
-            {lesson.title}
+            {lesson.title} · {noteCountLabel}
           </p>
         </div>
 
-        <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end sm:gap-3">
-          <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-            {wordCount} {LABEL_WORDS}
-          </span>
-          {locked ? (
+        <div className="flex min-h-[37px] shrink-0 flex-nowrap items-center gap-2 overflow-x-auto">
+          {(isDraft || (hasSavedNoteSelected && !locked)) && (
             <button
-              onClick={handleEdit}
-              className="flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-[13px] font-medium transition-colors"
+              type="button"
+              onClick={handleSave}
+              disabled={!content.trim() || isSaving}
+              className={`${btnInteractive} flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-semibold`}
               style={{
-                border: "1px solid var(--border-strong)",
+                background: "var(--accent)",
+                color: "var(--on-accent)",
+                opacity: content.trim() && !isSaving ? 1 : 0.4,
+                cursor:
+                  content.trim() && !isSaving ? "pointer" : "not-allowed",
+              }}
+            >
+              <RiSaveLine size={13} />
+              {isSaving ? "Saving…" : LABEL_SAVE}
+            </button>
+          )}
+
+          {hasSavedNoteSelected && locked && (
+            <button
+              type="button"
+              onClick={() => setLocked(false)}
+              className={`${btnInteractive} flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-[13px] font-medium`}
+              style={{
+                borderColor: "var(--border-strong)",
                 color: "var(--text)",
-                background: "var(--bg)",
+                background: "var(--input-bg)",
               }}
             >
               <RiPencilLine size={13} />
               {LABEL_EDIT}
             </button>
-          ) : (
+          )}
+
+          {hasSavedNoteSelected && (
             <button
-              onClick={handleSave}
-              disabled={!content.trim() || saveMutation.isPending}
-              className="flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-semibold text-white transition-opacity"
+              type="button"
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              className={`${btnInteractive} flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-[13px] font-medium`}
               style={{
-                background: "var(--accent)",
-                opacity: content.trim() && !saveMutation.isPending ? 1 : 0.4,
-                cursor:
-                  content.trim() && !saveMutation.isPending
-                    ? "pointer"
-                    : "not-allowed",
+                borderColor: "var(--red-border)",
+                color: "var(--red)",
+                background: "var(--red-soft)",
+                opacity: deleteMutation.isPending ? 0.4 : 1,
+                cursor: deleteMutation.isPending ? "not-allowed" : "pointer",
               }}
             >
-              <RiSaveLine size={13} />
-              {saveMutation.isPending ? "Saving..." : LABEL_SAVE}
+              <RiDeleteBinLine size={13} />
+              {LABEL_DELETE}
+            </button>
+          )}
+
+          {isDraft ? (
+            <button
+              type="button"
+              onClick={handleCancelDraft}
+              className={`${btnInteractive} flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-semibold`}
+              style={{
+                background: "tomato",
+                color: "#fff",
+              }}
+            >
+              <RiCloseLine size={14} />
+              {LABEL_CANCEL}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleNewNote}
+              className={`${btnInteractive} flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-semibold`}
+              style={{
+                background: "var(--accent)",
+                color: "var(--on-accent)",
+              }}
+            >
+              <RiAddLine size={14} />
+              {LABEL_NEW}
             </button>
           )}
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden">
-        {isLoading && !data ? (
+      {isLoading && notes.length === 0 ? (
+        <SkeletonNoteGrid />
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col gap-3 md:flex-row md:gap-4">
           <div
-            className="flex h-full items-center justify-center text-center"
-            style={{ color: "var(--text-muted)" }}
+            className={`min-h-0 md:w-56 lg:w-64 ${
+              mobileShowEditor ? "hidden md:block" : "block"
+            }`}
           >
-            Loading notes...
-          </div>
-        ) : locked ? (
-          <div
-            className="h-full overflow-y-auto rounded-xl border p-4 sm:p-5"
-            style={{
-              background: "var(--surface-raised)",
-              border: "1px solid var(--border)",
-            }}
-          >
-            <div className="mb-3 flex items-center gap-1.5">
-              <RiStickyNoteLine
-                size={12}
-                style={{ color: "var(--text-muted)" }}
+            {notes.length === 0 && !isDraft ? (
+              <EmptyState
+                icon={<RiStickyNoteLine size={22} />}
+                title={LABEL_EMPTY_LIST}
+                description={LABEL_EMPTY_HINT}
+                compact
               />
-              <p
-                className="text-[10px] font-semibold uppercase tracking-widest"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {LABEL_SAVED}
-              </p>
-            </div>
-            {content.split("\n").map((line, i) => (
-              <p
-                key={i}
-                className="min-h-5 break-words text-[13px] leading-relaxed"
-                style={{ color: "var(--text)" }}
-              >
-                {line}
-              </p>
-            ))}
+            ) : (
+              <div className="grid max-h-full grid-cols-2 gap-2 overflow-y-auto pr-0.5 md:grid-cols-1 lg:grid-cols-2">
+                {notes.map((note) => (
+                  <NoteCard
+                    key={note.id}
+                    note={note}
+                    active={note.id === selectedId}
+                    onSelect={() => selectNote(note)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        ) : (
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder={`Write your notes about ${lesson.title}${PLACEHOLDER_SUFFIX}`}
-            className="h-full w-full min-w-0 resize-none rounded-xl border p-4 text-[13px] leading-relaxed outline-none transition-colors sm:p-5"
-            style={{
-              background: "var(--surface-raised)",
-              border: "1px solid var(--border-strong)",
-              color: "var(--text)",
-            }}
-            onFocus={(e) =>
-              (e.currentTarget.style.borderColor = "var(--accent)")
-            }
-            onBlur={(e) =>
-              (e.currentTarget.style.borderColor = "var(--border-strong)")
-            }
-          />
-        )}
-      </div>
+
+          <div
+            className={`min-h-0 min-w-0 flex-1 flex-col ${
+              mobileShowEditor || showEditor ? "flex" : "hidden md:flex"
+            }`}
+          >
+            {mobileShowEditor && (
+              <button
+                type="button"
+                onClick={resetEditor}
+                className="mb-2 flex items-center gap-1 text-[12px] font-medium md:hidden"
+                style={{ color: "var(--accent)" }}
+              >
+                <RiArrowLeftLine size={14} />
+                All notes
+              </button>
+            )}
+
+            {showEditor ? (
+              <div className="flex min-h-0 flex-1 flex-col gap-3">
+                <div className="flex-none min-w-0">
+                  {locked ? (
+                    <h3
+                      className="truncate text-[15px] font-semibold"
+                      style={{ color: "var(--text)" }}
+                    >
+                      {deriveNoteTitle(title, content)}
+                    </h3>
+                  ) : (
+                    <input
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Note title"
+                      className="w-full rounded-lg border px-3 py-2 text-[14px] font-semibold outline-none"
+                      style={{
+                        background: "var(--input-bg)",
+                        borderColor: "var(--border-strong)",
+                        color: "var(--text)",
+                      }}
+                    />
+                  )}
+                  <p
+                    className="mt-0.5 text-[11px]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {dateLabel}
+                    {dateLabel ? " · " : ""}
+                    {wordCount} {LABEL_WORDS}
+                    {isFetching && !isDraft ? " · syncing…" : ""}
+                  </p>
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-hidden">
+                  {locked ? (
+                    <div
+                      className="h-full overflow-y-auto rounded-xl border p-4 sm:p-5"
+                      style={{
+                        background: "var(--surface-raised)",
+                        borderColor: "var(--border)",
+                      }}
+                    >
+                      <p
+                        className="whitespace-pre-wrap break-words text-[13px] leading-relaxed"
+                        style={{ color: "var(--text)" }}
+                      >
+                        {content || "Empty note"}
+                      </p>
+                    </div>
+                  ) : (
+                    <textarea
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      placeholder={PLACEHOLDER}
+                      autoFocus
+                      className="h-full w-full min-w-0 resize-none rounded-xl border p-4 text-[13px] leading-relaxed outline-none sm:p-5"
+                      style={{
+                        background: "var(--surface-raised)",
+                        borderColor: "var(--border-strong)",
+                        color: "var(--text)",
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
+            ) : (
+              <EmptyState
+                icon={<RiStickyNoteLine size={22} />}
+                title="Select a note"
+                description={LABEL_SELECT_HINT}
+                fill
+                className="rounded-xl border border-dashed"
+                style={{ borderColor: "var(--border-strong)" }}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

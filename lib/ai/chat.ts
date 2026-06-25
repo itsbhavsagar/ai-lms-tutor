@@ -123,6 +123,11 @@ export async function chatWithContext(
     },
   });
 
+  await prisma.session.update({
+    where: { id: sessionId },
+    data: { updatedAt: new Date() },
+  });
+
   let fullResponse = "";
 
   const stream = new ReadableStream({
@@ -145,6 +150,11 @@ export async function chatWithContext(
             role: "assistant",
             content: fullResponse,
           },
+        });
+
+        await prisma.session.update({
+          where: { id: sessionId },
+          data: { updatedAt: new Date() },
         });
       } catch (error) {
         console.error("Streaming error:", error);

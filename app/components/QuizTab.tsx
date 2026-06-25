@@ -16,6 +16,10 @@ import {
   useSubmitQuizMutation,
 } from "@/lib/hooks/queries/useQuiz";
 import type { QuizGetResponse } from "@/lib/api/quiz";
+import EmptyState from "./ui/EmptyState";
+import PrimaryButton from "./ui/PrimaryButton";
+import { SkeletonQuiz } from "./ui/Skeleton";
+import { cardClass, panelHeadingClass, panelSubtextClass } from "@/lib/ui/styles";
 
 const LABEL_GENERATE = "Generate Quiz";
 const LABEL_REGENERATE = "Regenerate";
@@ -41,7 +45,7 @@ function buildQuizViewModel(data: QuizGetResponse | undefined): QuizViewModel | 
   if (!data?.quiz) return null;
 
   const attempts = data.attempts || [];
-  const lastAttempt = attempts[attempts.length - 1];
+  const lastAttempt = attempts[0];
   let lastSelected: Record<number, number> = {};
 
   if (attempts.length > 0) {
@@ -69,13 +73,11 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
 
   const [selected, setSelected] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
-  const [showResult, setShowResult] = useState(false);
 
   const quizData = buildQuizViewModel(data);
   const hasAttempts = (quizData?.attempts.length ?? 0) > 0;
 
   useEffect(() => {
-    setShowResult(false);
     setSubmitted(false);
     setSelected({});
   }, [lesson.id]);
@@ -83,16 +85,21 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
   useEffect(() => {
     if (!quizData) return;
 
-    if (hasAttempts && quizData.lastSelected) {
-      setSelected(quizData.lastSelected);
+    if (hasAttempts) {
+      const savedSelected = localStorage.getItem(
+        `quiz-selected-${quizData.id}`,
+      );
+      try {
+        setSelected(savedSelected ? JSON.parse(savedSelected) : {});
+      } catch {
+        setSelected({});
+      }
       setSubmitted(true);
-      setShowResult(false);
     } else {
       setSelected({});
       setSubmitted(false);
-      setShowResult(false);
     }
-  }, [quizData?.id, hasAttempts, quizData?.lastSelected]);
+  }, [quizData?.id, hasAttempts]);
 
   const generating = generateMutation.isPending;
   const questions = quizData?.questions || [];
@@ -120,7 +127,6 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
 
   function handleGenerateQuiz() {
     setSubmitted(false);
-    setShowResult(false);
     setSelected({});
     generateMutation.mutate();
   }
@@ -145,7 +151,6 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
             JSON.stringify(selected),
           );
           setSubmitted(true);
-          setShowResult(true);
         },
       },
     );
@@ -161,7 +166,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
       <div className="flex flex-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex flex-col gap-0.5">
           <h2
-            className="text-[15px] font-semibold"
+            className={panelHeadingClass}
             style={{ color: "var(--text)" }}
           >
             {generating
@@ -171,17 +176,17 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
                 : "Quiz"}
           </h2>
           {!generating && questions.length > 0 && !submitted && (
-            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+            <p className={panelSubtextClass} style={{ color: "var(--text-muted)" }}>
               {answered} / {questions.length} {LABEL_ANSWERED}
             </p>
           )}
           {submitted && !generating && (
-            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+            <p className={panelSubtextClass} style={{ color: "var(--text-muted)" }}>
               {score} / {questions.length} {LABEL_CORRECT}
             </p>
           )}
           {bestPreviousScore !== null && !submitted && !generating && (
-            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+            <p className={panelSubtextClass} style={{ color: "var(--text-muted)" }}>
               Previous best:{" "}
               <span style={{ color: "var(--green)", fontWeight: 600 }}>
                 {bestPreviousScore}/{questions.length}
@@ -190,15 +195,10 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
           )}
         </div>
 
-        <button
+        <PrimaryButton
           onClick={handleGenerateQuiz}
           disabled={generating}
-          className="flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-semibold text-white transition-opacity sm:w-auto"
-          style={{
-            background: "var(--accent)",
-            opacity: generating ? 0.55 : 1,
-            cursor: generating ? "not-allowed" : "pointer",
-          }}
+          fullWidth
         >
           {questions.length > 0 ? (
             <RiRefreshLine size={14} />
@@ -210,27 +210,23 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
             : questions.length > 0
               ? LABEL_REGENERATE
               : LABEL_GENERATE}
-        </button>
+        </PrimaryButton>
       </div>
 
       {isLoading && !quizData ? (
-        <div
-          className="flex flex-1 flex-col items-center justify-center gap-3 text-center"
-          style={{ color: "var(--text-muted)" }}
-        >
-          Loading...
-        </div>
+        <SkeletonQuiz />
+      ) : generating && questions.length === 0 ? (
+        <SkeletonQuiz />
       ) : !generating && questions.length === 0 ? (
-        <div
-          className="flex flex-1 flex-col items-center justify-center gap-3 text-center"
-          style={{ color: "var(--text-muted)" }}
-        >
-          <RiFileTextLine size={32} style={{ opacity: 0.35 }} />
-          <p className="text-[13px]">{LABEL_EMPTY}</p>
-        </div>
+        <EmptyState
+          icon={<RiFileTextLine size={22} />}
+          title="No quiz yet"
+          description={LABEL_EMPTY}
+          fill
+        />
       ) : null}
 
-      {showResult && quizData && (
+      {submitted && quizData && questions.length > 0 && !generating && (
         <div
           className="w-full flex-none rounded-xl border p-4 text-center sm:p-6"
           style={{
@@ -305,14 +301,10 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
             {questions.map((q, qIndex) => (
               <div
                 key={qIndex}
-                className="rounded-xl border p-4 sm:p-5"
-                style={{
-                  background: "var(--surface-raised)",
-                  border: "1px solid var(--border)",
-                }}
+                className={`${cardClass} flex flex-col gap-4`}
               >
                 <p
-                  className="mb-4 flex items-start gap-2.5 text-[13px] font-semibold leading-snug"
+                  className="flex items-start gap-2.5 text-[13px] font-semibold leading-snug"
                   style={{ color: "var(--text)" }}
                 >
                   <span
@@ -355,9 +347,9 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
                         color = "var(--text-muted)";
                       }
                     } else if (isSelected) {
-                      bg = "var(--text)";
-                      border = "var(--text)";
-                      color = "#fff";
+                      bg = "var(--selection-bg)";
+                      border = "var(--selection-bg)";
+                      color = "var(--selection-fg)";
                     }
 
                     return (
@@ -384,21 +376,16 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
             ))}
 
             {!submitted && (
-              <button
+              <PrimaryButton
                 onClick={handleSubmitQuiz}
                 disabled={
                   answered < questions.length || submitMutation.isPending
                 }
-                className="w-full rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white transition-opacity sm:w-auto sm:self-start"
-                style={{
-                  background: "var(--accent)",
-                  opacity: answered < questions.length ? 0.4 : 1,
-                  cursor:
-                    answered < questions.length ? "not-allowed" : "pointer",
-                }}
+                fullWidth
+                className="sm:self-start"
               >
                 {LABEL_SUBMIT}
-              </button>
+              </PrimaryButton>
             )}
           </div>
         </div>
