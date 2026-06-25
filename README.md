@@ -14,6 +14,8 @@ The project ships with a small set of built-in lessons and uses Groq for chat, q
 - RAG chat over pasted content or uploaded PDFs
 - Voice input transcription for chat prompts
 - Streaming demo chat powered by Groq
+- TanStack Query caching so tab switches do not refetch unchanged lesson data
+- Toast notifications for API errors with user-friendly messages
 - Simple in-memory rate limiting for selected API routes
 
 ## Tech Stack
@@ -21,7 +23,9 @@ The project ships with a small set of built-in lessons and uses Groq for chat, q
 - Next.js 16 with App Router
 - React 19
 - TypeScript
+- TanStack Query for server-state caching
 - Tailwind CSS v4
+- Sonner for toast notifications
 - Prisma ORM
 - PostgreSQL
 - Groq SDK
@@ -30,9 +34,9 @@ The project ships with a small set of built-in lessons and uses Groq for chat, q
 
 ## How It Works
 
-The app starts with a set of predefined lessons in [`app/data/lessons.ts`](/Users/sagar/Desktop/ai-lms-tutor/app/data/lessons.ts). When a user opens the app, a browser-local `userId` is created and reused through `localStorage`. That `userId` is then used to associate sessions, notes, summaries, quizzes, uploaded documents, and message history in PostgreSQL.
+The app starts with a set of predefined lessons in [`app/data/lessons.ts`](app/data/lessons.ts). When a user opens the app, a browser-local `userId` is created and reused through `localStorage`. That `userId` is then used to associate sessions, notes, summaries, quizzes, uploaded documents, and message history in PostgreSQL.
 
-The main study experience lives in [`app/page.tsx`](/Users/sagar/Desktop/ai-lms-tutor/app/page.tsx), where users can switch between these tabs:
+The main study experience lives in [`app/page.tsx`](app/page.tsx), where users can switch between these tabs:
 
 - `Chat`: lesson Q&A with persisted session messages
 - `Quiz`: generates multiple-choice questions from the selected lesson
@@ -41,24 +45,59 @@ The main study experience lives in [`app/page.tsx`](/Users/sagar/Desktop/ai-lms-
 - `RAG Chat`: indexes pasted text or PDFs and answers from retrieved chunks
 - `Live Chat`: lightweight demo streaming chat
 
+Tabs are mounted conditionally (only the active tab renders). Server data is not lost on tab switch because it lives in a TanStack Query cache above the tab tree, keyed by `userId` and `lessonId`. Switching back to a tab within the stale window serves cached data instantly instead of refetching.
+
+## State Management & Data Fetching
+
+The app separates **server state** from **UI state**:
+
+| Layer | Responsibility | Examples |
+| --- | --- | --- |
+| TanStack Query | Fetched and mutated server data | quiz, notes, summary, chat history, RAG index status |
+| Component `useState` | Ephemeral UI state | quiz selections, edit mode, streaming chat buffers, mic recording |
+| `localStorage` | Browser-persistent identifiers | `userId`, per-lesson chat `sessionId` |
+
+### Query cache
+
+[`app/providers.tsx`](app/providers.tsx) wraps the app in a `QueryClientProvider`. Query keys are defined in [`lib/query/keys.ts`](lib/query/keys.ts) and scoped by `userId` + `lessonId` (or `sessionId` for chat messages).
+
+Default cache behavior ([`lib/query/config.ts`](lib/query/config.ts)):
+
+- `staleTime`: 5 minutes — cached data is considered fresh; tab remounts do not trigger new requests
+- `gcTime`: 30 minutes — unused cache entries are garbage-collected after this period
+- Mutations invalidate or update the cache (e.g. generating a quiz refetches quiz data; saving notes writes directly to cache)
+
+Feature hooks live under [`lib/hooks/queries/`](lib/hooks/queries/) (`useQuiz`, `useNotes`, `useSummary`, `useMessages`, `useRag`, etc.).
+
+### API client layer
+
+All frontend HTTP calls go through [`lib/api/client.ts`](lib/api/client.ts) (`apiGet`, `apiPost`, `apiStreamPost`, etc.) and domain modules in [`lib/api/`](lib/api/). Errors are normalized to user-friendly messages via [`lib/utils/errorMessage.ts`](lib/utils/errorMessage.ts) and surfaced as toasts through the global query/mutation error handlers in [`lib/query/query-client.ts`](lib/query/query-client.ts).
+
+### Why TanStack Query instead of keeping all tabs mounted?
+
+Keeping every tab in the DOM (`display: none`) would preserve component state but wastes memory and keeps inactive listeners alive. Caching server state in TanStack Query gives the same benefit for fetched data — no duplicate requests on tab switch — while only rendering the active tab.
+
 ## Project Structure
 
 ```text
 ai-lms-tutor/
 ├── app/
 │   ├── api/                 # Route handlers for chat, quiz, summary, notes, RAG, upload, etc.
-│   ├── components/          # UI tabs and shared tab navigation
+│   ├── components/          # UI tabs, navigation, and shared components
 │   ├── data/                # Built-in lesson content
 │   ├── types/               # Shared frontend types
 │   ├── globals.css          # Global styling
 │   ├── layout.tsx           # Root layout and metadata
-│   └── page.tsx             # Main application screen
+│   ├── page.tsx             # Main application screen
+│   └── providers.tsx        # QueryClientProvider and global toasts
 ├── lib/
 │   ├── ai/                  # Groq/Cohere helpers
-│   ├── api/                 # Frontend API wrapper helpers
+│   ├── api/                 # Typed frontend API client (fetch wrappers per domain)
 │   ├── db/                  # Prisma client and session helpers
+│   ├── hooks/               # React hooks (useUserId, TanStack Query feature hooks)
 │   ├── middleware/          # Rate limiting
-│   └── utils/               # Validation, storage, text, and PDF helpers
+│   ├── query/               # Query keys, cache config, and QueryClient factory
+│   └── utils/               # Validation, storage, errors, toasts, and PDF helpers
 ├── prisma/
 │   ├── migrations/          # Prisma migrations
 │   └── schema.prisma        # Database schema
@@ -69,7 +108,7 @@ ai-lms-tutor/
 
 ## Database Models
 
-The Prisma schema in [`prisma/schema.prisma`](/Users/sagar/Desktop/ai-lms-tutor/prisma/schema.prisma) defines these main entities:
+The Prisma schema in [`prisma/schema.prisma`](prisma/schema.prisma) defines these main entities:
 
 - `User`: logical app user keyed by a generated browser ID
 - `Session`: a chat session for a lesson
@@ -127,7 +166,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Core API Routes
 
-The server routes are implemented under [`app/api`](/Users/sagar/Desktop/ai-lms-tutor/app/api).
+The server routes are implemented under [`app/api`](app/api).
 
 | Route | Method | Purpose |
 | --- | --- | --- |
@@ -194,19 +233,25 @@ This project does not currently implement a full authentication system. Instead,
 
 - Rate limiting is in-memory, so it resets on server restart and is not shared across instances.
 - RAG similarity search is computed in application code after loading chunks from the database.
+- RAG index status is tracked in the client query cache (there is no GET endpoint); a full page reload resets the “indexed” UI until content is re-indexed.
+- In-progress quiz selections reset when switching tabs (attempt history is still cached).
 - The app uses seeded lesson content rather than a full CMS or LMS backend.
 - User identity is local-browser based, not authenticated.
 - PDF page count shown in the UI is estimated from chunk count, not true PDF pagination.
 
 ## Useful Files
 
-- [`app/page.tsx`](/Users/sagar/Desktop/ai-lms-tutor/app/page.tsx): main UI shell
-- [`app/components/ChatTab.tsx`](/Users/sagar/Desktop/ai-lms-tutor/app/components/ChatTab.tsx): lesson chat with voice input
-- [`app/components/RagTab.tsx`](/Users/sagar/Desktop/ai-lms-tutor/app/components/RagTab.tsx): indexing and RAG chat UI
-- [`lib/ai/chat.ts`](/Users/sagar/Desktop/ai-lms-tutor/lib/ai/chat.ts): streaming chat and session persistence
-- [`app/api/upload-pdf/route.ts`](/Users/sagar/Desktop/ai-lms-tutor/app/api/upload-pdf/route.ts): PDF ingestion pipeline
-- [`app/api/rag-chat/route.ts`](/Users/sagar/Desktop/ai-lms-tutor/app/api/rag-chat/route.ts): chunk retrieval and grounded answers
-- [`prisma/schema.prisma`](/Users/sagar/Desktop/ai-lms-tutor/prisma/schema.prisma): data model
+- [`app/page.tsx`](app/page.tsx): main UI shell and tab routing
+- [`app/providers.tsx`](app/providers.tsx): TanStack Query provider and toast setup
+- [`lib/query/keys.ts`](lib/query/keys.ts): cache keys by user, lesson, and session
+- [`lib/hooks/queries/`](lib/hooks/queries/): feature query and mutation hooks
+- [`lib/api/client.ts`](lib/api/client.ts): shared fetch helpers and error parsing
+- [`app/components/ChatTab.tsx`](app/components/ChatTab.tsx): lesson chat with voice input
+- [`app/components/RagTab.tsx`](app/components/RagTab.tsx): indexing and RAG chat UI
+- [`lib/ai/chat.ts`](lib/ai/chat.ts): streaming chat and session persistence
+- [`app/api/upload-pdf/route.ts`](app/api/upload-pdf/route.ts): PDF ingestion pipeline
+- [`app/api/rag-chat/route.ts`](app/api/rag-chat/route.ts): chunk retrieval and grounded answers
+- [`prisma/schema.prisma`](prisma/schema.prisma): data model
 
 ## Future Improvements
 
