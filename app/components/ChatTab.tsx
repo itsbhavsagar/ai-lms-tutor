@@ -2,13 +2,17 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Lesson } from "../data/lessons";
 import type { ChatMessage } from "../types/chat";
-import { getOrCreateUserId } from "../../lib/utils/localStorage";
 import { getClientErrorMessage } from "@/lib/api/client";
-import { streamLessonChatWithRetry, transcribeRecording } from "@/lib/api/chat";
-import { fetchMessages } from "@/lib/api/messages";
-import { createSession } from "@/lib/api/sessions";
+import { streamLessonChatWithRetry } from "@/lib/api/chat";
 import { showError } from "@/lib/utils/toast";
-import { withApiToast } from "@/lib/utils/withApiToast";
+import { useUserId } from "@/lib/hooks/useUserId";
+import {
+  flattenMessages,
+  useCreateSessionMutation,
+  useMessagesQuery,
+  useUpdateMessagesCache,
+} from "@/lib/hooks/queries/useMessages";
+import { useTranscribeMutation } from "@/lib/hooks/queries/useTranscribe";
 import MessageContent from "./MessageContent";
 import {
   RiSendPlane2Line,
@@ -25,6 +29,11 @@ const RELEASE_TO_STOP_LABEL = "Release when you are done";
 const MIC_DENIED_MSG = "Microphone access denied.";
 
 export default function ChatTab({ lesson }: { lesson: Lesson }) {
+  const userId = useUserId();
+  const { mutate: createSession, mutateAsync: createSessionAsync } =
+    useCreateSessionMutation();
+  const transcribeMutation = useTranscribeMutation();
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,9 +42,12 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   const [showMicHint, setShowMicHint] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+
+  const messagesQuery = useMessagesQuery(sessionId);
+  const updateMessagesCache = useUpdateMessagesCache(sessionId);
+
+  const loadingMore = messagesQuery.isFetchingNextPage;
+  const hasMore = messagesQuery.hasNextPage ?? false;
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -48,10 +60,14 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     setMessages([]);
     setInput("");
     setSessionId(null);
-    setCursor(null);
-    setHasMore(true);
-    setLoadingMore(false);
   }, [lesson.id]);
+
+  useEffect(() => {
+    if (!sessionId || loading) return;
+    if (messagesQuery.data) {
+      setMessages(flattenMessages(messagesQuery.data));
+    }
+  }, [messagesQuery.data, sessionId, loading]);
   useEffect(() => {
     if (!shouldAutoScroll) return;
 
@@ -63,59 +79,21 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     });
   }, [messages, shouldAutoScroll]);
 
-  useEffect(() => {
-    if (!sessionId) return;
-
-    async function loadMessages() {
-      const data = await withApiToast("Failed to load messages", () =>
-        fetchMessages(sessionId!),
-      );
-      if (!data) return;
-
-      if (data.messages?.length) {
-        setMessages(data.messages);
-        setCursor(data.nextCursor);
-        setHasMore(data.nextCursor !== null);
-        setShouldAutoScroll(true);
-      } else {
-        setMessages([]);
-        setCursor(null);
-        setHasMore(false);
-      }
-    }
-
-    loadMessages();
-  }, [sessionId]);
-
   const loadMoreMessages = useCallback(async () => {
-    if (!cursor || !hasMore || loadingMore || !sessionId) return;
+    if (!hasMore || loadingMore || !sessionId) return;
     setShouldAutoScroll(false);
-    setLoadingMore(true);
     const container = messagesContainerRef.current;
     const prevScrollHeight = container?.scrollHeight || 0;
 
-    const data = await withApiToast("Failed to load older messages", () =>
-      fetchMessages(sessionId, cursor),
-    );
+    await messagesQuery.fetchNextPage();
 
-    if (data?.messages?.length) {
-      setMessages((prev) => [...data.messages, ...prev]);
-      setCursor(data.nextCursor);
-      setHasMore(data.nextCursor !== null);
-
-      setTimeout(() => {
-        if (container) {
-          const newScrollHeight = container.scrollHeight;
-          const scrollDiff = newScrollHeight - prevScrollHeight;
-          container.scrollTop += scrollDiff;
-        }
-      }, 0);
-    } else if (data) {
-      setHasMore(false);
-    }
-
-    setLoadingMore(false);
-  }, [cursor, hasMore, loadingMore, sessionId]);
+    setTimeout(() => {
+      if (container) {
+        const newScrollHeight = container.scrollHeight;
+        container.scrollTop += newScrollHeight - prevScrollHeight;
+      }
+    }, 0);
+  }, [hasMore, loadingMore, sessionId, messagesQuery]);
 
   const handleScroll = useCallback(() => {
     const container = messagesContainerRef.current;
@@ -172,18 +150,18 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
       return;
     }
 
-    createNewSession();
+    if (!userId) return;
 
-    async function createNewSession() {
-      const data = await withApiToast("Failed to create chat session", () =>
-        createSession(getOrCreateUserId(), lesson.id, lesson.title),
-      );
-      if (data?.session?.id) {
-        setSessionId(data.session.id);
-        localStorage.setItem(sessionKey, data.session.id);
-      }
-    }
-  }, [lesson.id, lesson.title]);
+    createSession(
+      { userId, lessonId: lesson.id, title: lesson.title },
+      {
+        onSuccess: (data) => {
+          setSessionId(data.session.id);
+          localStorage.setItem(sessionKey, data.session.id);
+        },
+      },
+    );
+  }, [lesson.id, lesson.title, userId, createSession]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && recording) {
@@ -232,25 +210,32 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
       return;
     }
 
-    const data = await withApiToast("Transcription failed", () =>
-      transcribeRecording(blob),
-    );
-    if (data?.text) setInput(data.text);
-    setTranscribing(false);
+    transcribeMutation.mutate(blob, {
+      onSuccess: (data) => {
+        if (data?.text) setInput(data.text);
+        setTranscribing(false);
+      },
+      onError: () => setTranscribing(false),
+    });
   }
 
   async function sendMessage() {
-    if (!input.trim() || loading) return;
+    if (!input.trim() || loading || !userId) return;
 
     let currentSessionId = sessionId;
     if (!currentSessionId) {
-      const created = await withApiToast("Failed to create chat session", () =>
-        createSession(getOrCreateUserId(), lesson.id, lesson.title),
-      );
-      if (!created) return;
-      currentSessionId = created.session.id;
-      setSessionId(currentSessionId);
-      localStorage.setItem(`sessionId_${lesson.id}`, currentSessionId);
+      try {
+        const created = await createSessionAsync({
+          userId,
+          lessonId: lesson.id,
+          title: lesson.title,
+        });
+        currentSessionId = created.session.id;
+        setSessionId(currentSessionId);
+        localStorage.setItem(`sessionId_${lesson.id}`, currentSessionId);
+      } catch {
+        return;
+      }
     }
 
     const userMsg: ChatMessage = { role: "user", content: input };
@@ -258,7 +243,10 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     setMessages(history);
     setInput("");
     setLoading(true);
+    setShouldAutoScroll(true);
     setMessages((p) => [...p, { role: "assistant", content: "" }]);
+
+    let finalMessages = [...history, { role: "assistant" as const, content: "" }];
 
     try {
       await streamLessonChatWithRetry({
@@ -267,11 +255,12 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
         lessonContent: lesson.content,
         lessonId: lesson.id,
         lessonTitle: lesson.title,
-        userId: getOrCreateUserId(),
+        userId,
         onChunk: (buffer) => {
           setMessages((p) => {
             const u = [...p];
             u[u.length - 1] = { ...u[u.length - 1], content: buffer };
+            finalMessages = u;
             return u;
           });
         },
@@ -280,6 +269,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
           localStorage.setItem(`sessionId_${lesson.id}`, id);
         },
       });
+      updateMessagesCache(finalMessages);
     } catch (error) {
       console.error("Chat error:", error);
       showError(getClientErrorMessage(error, "Chat failed"));

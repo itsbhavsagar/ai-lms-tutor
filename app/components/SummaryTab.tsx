@@ -1,20 +1,14 @@
 "use client";
-import { useState, useEffect } from "react";
 import { Lesson } from "../data/lessons";
 import {
   RiSparkling2Line,
   RiRefreshLine,
   RiBookOpenLine,
 } from "react-icons/ri";
-import { getOrCreateUserId } from "@/lib/utils/localStorage";
-import { fetchSummary, generateSummary } from "@/lib/api/summary";
-import { withApiToast } from "@/lib/utils/withApiToast";
-
-type Summary = {
-  overview: string;
-  keyPoints: string[];
-  remember: string;
-};
+import {
+  useGenerateSummaryMutation,
+  useSummaryQuery,
+} from "@/lib/hooks/queries/useSummary";
 
 const LABEL_GENERATE = "Generate Summary";
 const LABEL_REGENERATE = "Regenerate";
@@ -26,37 +20,11 @@ const LABEL_EMPTY = "Generate a summary to review key concepts";
 const LABEL_HEADING = "AI Summary";
 
 export default function SummaryTab({ lesson }: { lesson: Lesson }) {
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
+  const { data, isLoading } = useSummaryQuery(lesson.id);
+  const generateMutation = useGenerateSummaryMutation(lesson);
 
-  useEffect(() => {
-    loadSummary();
-  }, [lesson.id]);
-
-  async function loadSummary() {
-    setLoading(true);
-    const data = await withApiToast("Failed to load summary", () =>
-      fetchSummary(getOrCreateUserId(), lesson.id),
-    );
-    if (data?.summary) setSummary(data.summary);
-    setLoading(false);
-  }
-
-  async function handleGenerateSummary() {
-    setGenerating(true);
-    setSummary(null);
-    const data = await withApiToast("Failed to generate summary", () =>
-      generateSummary({
-        lessonContent: lesson.content,
-        lessonTitle: lesson.title,
-        userId: getOrCreateUserId(),
-        lessonId: lesson.id,
-      }),
-    );
-    if (data) setSummary(data);
-    setGenerating(false);
-  }
+  const summary = data?.summary ?? null;
+  const generating = generateMutation.isPending;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
@@ -68,7 +36,7 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
           {generating ? LABEL_GENERATING : LABEL_HEADING}
         </h2>
         <button
-          onClick={handleGenerateSummary}
+          onClick={() => generateMutation.mutate()}
           disabled={generating}
           className="flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-semibold text-white transition-opacity sm:w-auto"
           style={{
@@ -91,7 +59,7 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pr-0 sm:pr-1">
-        {loading && !summary ? (
+        {isLoading && !summary ? (
           <div
             className="flex h-full items-center justify-center text-center"
             style={{ color: "var(--text-muted)" }}

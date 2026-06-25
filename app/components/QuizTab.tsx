@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Lesson } from "../data/lessons";
 import type { QuizQuestion } from "../types/quiz";
 import {
@@ -10,9 +10,12 @@ import {
   RiCloseLine,
   RiTrophyLine,
 } from "react-icons/ri";
-import { getOrCreateUserId } from "@/lib/utils/localStorage";
-import { fetchQuiz, generateQuiz, submitQuiz } from "@/lib/api/quiz";
-import { withApiToast } from "@/lib/utils/withApiToast";
+import {
+  useGenerateQuizMutation,
+  useQuizQuery,
+  useSubmitQuizMutation,
+} from "@/lib/hooks/queries/useQuiz";
+import type { QuizGetResponse } from "@/lib/api/quiz";
 
 const LABEL_GENERATE = "Generate Quiz";
 const LABEL_REGENERATE = "Regenerate";
@@ -26,7 +29,7 @@ const FEEDBACK_PERFECT = "Perfect score!";
 const FEEDBACK_GOOD = "Good job! Review the ones you missed.";
 const FEEDBACK_LOW = "Study more and try again.";
 
-type QuizData = {
+type QuizViewModel = {
   id: string;
   questions: QuizQuestion[];
   attempts: { score: number; total: number }[];
@@ -34,126 +37,64 @@ type QuizData = {
   lastSelected?: Record<number, number>;
 };
 
+function buildQuizViewModel(data: QuizGetResponse | undefined): QuizViewModel | null {
+  if (!data?.quiz) return null;
+
+  const attempts = data.attempts || [];
+  const lastAttempt = attempts[attempts.length - 1];
+  let lastSelected: Record<number, number> = {};
+
+  if (attempts.length > 0) {
+    const savedSelected = localStorage.getItem(`quiz-selected-${data.quiz.id}`);
+    try {
+      lastSelected = savedSelected ? JSON.parse(savedSelected) : {};
+    } catch {
+      lastSelected = {};
+    }
+  }
+
+  return {
+    id: data.quiz.id,
+    questions: data.quiz.questions,
+    attempts,
+    lastScore: lastAttempt?.score,
+    lastSelected: attempts.length > 0 ? lastSelected : undefined,
+  };
+}
+
 export default function QuizTab({ lesson }: { lesson: Lesson }) {
-  const [quizData, setQuizData] = useState<QuizData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
+  const { data, isLoading } = useQuizQuery(lesson.id);
+  const generateMutation = useGenerateQuizMutation(lesson);
+  const submitMutation = useSubmitQuizMutation(lesson.id);
+
   const [selected, setSelected] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
   const [showResult, setShowResult] = useState(false);
+
+  const quizData = buildQuizViewModel(data);
+  const hasAttempts = (quizData?.attempts.length ?? 0) > 0;
 
   useEffect(() => {
     setShowResult(false);
     setSubmitted(false);
     setSelected({});
-    loadQuiz();
   }, [lesson.id]);
 
-  async function loadQuiz() {
-    setLoading(true);
-    const data = await withApiToast("Failed to load quiz", () =>
-      fetchQuiz(getOrCreateUserId(), lesson.id),
-    );
+  useEffect(() => {
+    if (!quizData) return;
 
-    if (data?.quiz) {
-      const attempts = data.attempts || [];
-      const lastAttempt = attempts[attempts.length - 1];
-
-      if (attempts.length > 0) {
-        const savedSelected = localStorage.getItem(
-          `quiz-selected-${data.quiz.id}`,
-        );
-
-        let lastSelected = {};
-        try {
-          lastSelected = savedSelected ? JSON.parse(savedSelected) : {};
-        } catch {}
-
-        setQuizData({
-          id: data.quiz.id,
-          questions: data.quiz.questions,
-          attempts,
-          lastScore: lastAttempt?.score ?? undefined,
-          lastSelected,
-        });
-        setSelected(lastSelected);
-        setSubmitted(true);
-        setShowResult(false);
-      } else {
-        setQuizData({
-          id: data.quiz.id,
-          questions: data.quiz.questions,
-          attempts,
-          lastScore: undefined,
-          lastSelected: undefined,
-        });
-        setSelected({});
-        setSubmitted(false);
-        setShowResult(false);
-      }
-    } else if (data) {
-      setQuizData(null);
+    if (hasAttempts && quizData.lastSelected) {
+      setSelected(quizData.lastSelected);
+      setSubmitted(true);
+      setShowResult(false);
+    } else {
+      setSelected({});
       setSubmitted(false);
       setShowResult(false);
     }
-    setLoading(false);
-  }
+  }, [quizData?.id, hasAttempts, quizData?.lastSelected]);
 
-  async function handleGenerateQuiz() {
-    setGenerating(true);
-    setSubmitted(false);
-    setShowResult(false);
-    setSelected({});
-    setQuizData(null);
-
-    const ok = await withApiToast("Failed to generate quiz", () =>
-      generateQuiz({
-        lessonContent: lesson.content,
-        lessonTitle: lesson.title,
-        userId: getOrCreateUserId(),
-        lessonId: lesson.id,
-      }),
-    );
-
-    if (ok !== undefined) await loadQuiz();
-    setGenerating(false);
-  }
-
-  async function handleSubmitQuiz() {
-    if (!quizData) return;
-
-    const score = quizData.questions.filter(
-      (q, i) => selected[i] === q.correct,
-    ).length;
-
-    const ok = await withApiToast("Failed to submit quiz", () =>
-      submitQuiz({
-        quizId: quizData.id,
-        score,
-        total: quizData.questions.length,
-      }),
-    );
-
-    if (ok === undefined) return;
-
-    localStorage.setItem(
-      `quiz-selected-${quizData.id}`,
-      JSON.stringify(selected),
-    );
-
-    setQuizData((prev) =>
-      prev ? { ...prev, lastScore: score, lastSelected: selected } : prev,
-    );
-
-    setSubmitted(true);
-    setShowResult(true);
-  }
-
-  function selectOption(qIndex: number, oIndex: number) {
-    if (submitted) return;
-    setSelected((p) => ({ ...p, [qIndex]: oIndex }));
-  }
-
+  const generating = generateMutation.isPending;
   const questions = quizData?.questions || [];
   const score =
     submitted && quizData?.lastScore !== undefined
@@ -176,6 +117,44 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
     previousAttempts.length > 0
       ? Math.max(...previousAttempts.map((a) => a.score))
       : null;
+
+  function handleGenerateQuiz() {
+    setSubmitted(false);
+    setShowResult(false);
+    setSelected({});
+    generateMutation.mutate();
+  }
+
+  function handleSubmitQuiz() {
+    if (!quizData) return;
+
+    const nextScore = quizData.questions.filter(
+      (q, i) => selected[i] === q.correct,
+    ).length;
+
+    submitMutation.mutate(
+      {
+        quizId: quizData.id,
+        score: nextScore,
+        total: quizData.questions.length,
+      },
+      {
+        onSuccess: () => {
+          localStorage.setItem(
+            `quiz-selected-${quizData.id}`,
+            JSON.stringify(selected),
+          );
+          setSubmitted(true);
+          setShowResult(true);
+        },
+      },
+    );
+  }
+
+  function selectOption(qIndex: number, oIndex: number) {
+    if (submitted) return;
+    setSelected((p) => ({ ...p, [qIndex]: oIndex }));
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
@@ -234,7 +213,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
         </button>
       </div>
 
-      {loading && !questions.length ? (
+      {isLoading && !quizData ? (
         <div
           className="flex flex-1 flex-col items-center justify-center gap-3 text-center"
           style={{ color: "var(--text-muted)" }}
@@ -407,7 +386,9 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
             {!submitted && (
               <button
                 onClick={handleSubmitQuiz}
-                disabled={answered < questions.length}
+                disabled={
+                  answered < questions.length || submitMutation.isPending
+                }
                 className="w-full rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white transition-opacity sm:w-auto sm:self-start"
                 style={{
                   background: "var(--accent)",

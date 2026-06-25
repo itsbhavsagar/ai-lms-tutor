@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Lesson } from "../data/lessons";
 import type { ChatMessage } from "../types/chat";
 import {
@@ -9,10 +9,15 @@ import {
   RiSendPlane2Line,
   RiUploadCloud2Line,
 } from "react-icons/ri";
+import { getClientErrorMessage, readTextStream } from "@/lib/api/client";
+import { streamRagChat } from "@/lib/api/rag";
+import {
+  useRagIndexMutation,
+  useRagIndexQuery,
+  useResetRagIndexMutation,
+} from "@/lib/hooks/queries/useRag";
+import { showError } from "@/lib/utils/toast";
 import { getOrCreateUserId } from "@/lib/utils/localStorage";
-import { embedText, streamRagChat, uploadPdf } from "@/lib/api/rag";
-import { readTextStream } from "@/lib/api/client";
-import { withApiToast } from "@/lib/utils/withApiToast";
 import MessageContent from "./MessageContent";
 
 type InputMode = "paste" | "pdf";
@@ -39,13 +44,13 @@ const PLACEHOLDER_INPUT = "Ask from your indexed content…";
 const LABEL_RETRIEVING = "Retrieving relevant chunks…";
 
 export default function RagTab({ lesson }: { lesson: Lesson }) {
+  const { data: ragIndex } = useRagIndexQuery(lesson.id);
+  const indexMutation = useRagIndexMutation(lesson.id);
+  const resetMutation = useResetRagIndexMutation(lesson.id);
+
   const [mode, setMode] = useState<InputMode>("paste");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [indexed, setIndexed] = useState(false);
-  const [indexing, setIndexing] = useState(false);
-  const [chunksCreated, setChunksCreated] = useState(0);
-  const [pages, setPages] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -53,43 +58,31 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const indexed = ragIndex?.indexed ?? false;
+  const chunksCreated = ragIndex?.chunksCreated ?? 0;
+  const pages = ragIndex?.pages ?? 0;
+  const indexing = indexMutation.isPending;
   const lastMessage = messages[messages.length - 1]?.content;
 
   useEffect(() => {
-    setIndexed(false);
     setText("");
     setFile(null);
     setMessages([]);
-    setChunksCreated(0);
-    setPages(0);
+    setInput("");
   }, [lesson.id]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [lastMessage]);
 
-  async function handleIndex() {
-    setIndexing(true);
-    const userId = getOrCreateUserId();
-    const result =
-      mode === "paste"
-        ? await withApiToast("Failed to index text", () =>
-            embedText(text, lesson.id, userId),
-          )
-        : file
-          ? await withApiToast("Failed to upload PDF", () =>
-              uploadPdf(file, lesson.id, userId),
-            )
-          : undefined;
-
-    if (result) {
-      setChunksCreated(result.chunksCreated);
-      if ("pages" in result && typeof result.pages === "number") {
-        setPages(result.pages);
-      }
-      setIndexed(true);
+  function handleIndex() {
+    if (mode === "paste") {
+      indexMutation.mutate({ mode: "paste", text });
+      return;
     }
-    setIndexing(false);
+    if (file) {
+      indexMutation.mutate({ mode: "pdf", file });
+    }
   }
 
   async function sendMessage() {
@@ -101,11 +94,13 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
     setLoading(true);
     setMessages((p) => [...p, { role: "assistant", content: "" }]);
 
-    const response = await withApiToast("RAG chat failed", () =>
-      streamRagChat(history, lesson.id, getOrCreateUserId()),
-    );
+    try {
+      const response = await streamRagChat(
+        history,
+        lesson.id,
+        getOrCreateUserId(),
+      );
 
-    if (response) {
       await readTextStream(response, (buffer) => {
         setMessages((p) => {
           const u = [...p];
@@ -113,11 +108,22 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
           return u;
         });
       });
-    } else {
+    } catch (error) {
+      console.error("RAG chat error:", error);
+      showError(getClientErrorMessage(error, "RAG chat failed"));
       setMessages((p) => p.slice(0, -1));
+    } finally {
+      setLoading(false);
     }
+  }
 
-    setLoading(false);
+  function handleReIndex() {
+    resetMutation.mutate(undefined, {
+      onSuccess: () => {
+        setFile(null);
+        setMessages([]);
+      },
+    });
   }
 
   const canIndex = mode === "paste" ? text.trim().length > 0 : file !== null;
@@ -275,10 +281,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
           >
             <span className="min-w-0 break-words">{statusText}</span>
             <button
-              onClick={() => {
-                setIndexed(false);
-                setFile(null);
-              }}
+              onClick={handleReIndex}
               className="underline"
               style={{
                 color: "var(--green)",

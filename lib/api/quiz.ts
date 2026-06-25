@@ -6,6 +6,8 @@ type QuizGetResponse = {
   attempts: { score: number; total: number }[];
 };
 
+export type { QuizGetResponse };
+
 export function fetchQuiz(userId: string, lessonId: string) {
   return apiGet<QuizGetResponse>(
     `/api/quiz?userId=${userId}&lessonId=${lessonId}`,

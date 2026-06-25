@@ -1,10 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Lesson } from "../data/lessons";
 import { RiPencilLine, RiSaveLine, RiStickyNoteLine } from "react-icons/ri";
-import { getOrCreateUserId } from "@/lib/utils/localStorage";
-import { fetchNotes, saveNote } from "@/lib/api/notes";
-import { withApiToast } from "@/lib/utils/withApiToast";
+import {
+  useNotesQuery,
+  useSaveNoteMutation,
+} from "@/lib/hooks/queries/useNotes";
 
 const LABEL_SAVE = "Save Notes";
 const LABEL_EDIT = "Edit";
@@ -15,42 +16,25 @@ const PLACEHOLDER_SUFFIX =
   " here…\n\nTip: Summarize key points in your own words — it helps you remember better.";
 
 export default function NotesTab({ lesson }: { lesson: Lesson }) {
+  const { data, isLoading } = useNotesQuery(lesson.id);
+  const saveMutation = useSaveNoteMutation(lesson.id);
+
   const [content, setContent] = useState("");
   const [locked, setLocked] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
   const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
 
   useEffect(() => {
-    loadNotes();
-  }, [lesson.id]);
+    if (!data) return;
+    setContent(data.note?.content ?? "");
+    setLocked(!!data.note);
+  }, [lesson.id, data]);
 
-  async function loadNotes() {
-    setLoading(true);
-    const data = await withApiToast("Failed to load notes", () =>
-      fetchNotes(getOrCreateUserId(), lesson.id),
-    );
-    if (data) {
-      if (data.note) {
-        setContent(data.note.content);
-        setLocked(true);
-      } else {
-        setContent("");
-        setLocked(false);
-      }
-    }
-    setLoading(false);
-  }
-
-  async function handleSave() {
+  function handleSave() {
     if (!content.trim()) return;
-    setSaving(true);
-    const data = await withApiToast("Failed to save notes", () =>
-      saveNote(getOrCreateUserId(), lesson.id, content),
-    );
-    if (data?.note) setLocked(true);
-    setSaving(false);
+    saveMutation.mutate(content, {
+      onSuccess: () => setLocked(true),
+    });
   }
 
   function handleEdit() {
@@ -95,23 +79,26 @@ export default function NotesTab({ lesson }: { lesson: Lesson }) {
           ) : (
             <button
               onClick={handleSave}
-              disabled={!content.trim() || saving}
+              disabled={!content.trim() || saveMutation.isPending}
               className="flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-semibold text-white transition-opacity"
               style={{
                 background: "var(--accent)",
-                opacity: content.trim() && !saving ? 1 : 0.4,
-                cursor: content.trim() && !saving ? "pointer" : "not-allowed",
+                opacity: content.trim() && !saveMutation.isPending ? 1 : 0.4,
+                cursor:
+                  content.trim() && !saveMutation.isPending
+                    ? "pointer"
+                    : "not-allowed",
               }}
             >
               <RiSaveLine size={13} />
-              {saving ? "Saving..." : LABEL_SAVE}
+              {saveMutation.isPending ? "Saving..." : LABEL_SAVE}
             </button>
           )}
         </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden">
-        {loading ? (
+        {isLoading && !data ? (
           <div
             className="flex h-full items-center justify-center text-center"
             style={{ color: "var(--text-muted)" }}
