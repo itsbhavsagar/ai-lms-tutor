@@ -12,6 +12,7 @@ import {
 } from "react-icons/ri";
 import { getOrCreateUserId } from "@/lib/utils/localStorage";
 import { fetchQuiz, generateQuiz, submitQuiz } from "@/lib/api/quiz";
+import { withApiToast } from "@/lib/utils/withApiToast";
 
 const LABEL_GENERATE = "Generate Quiz";
 const LABEL_REGENERATE = "Regenerate";
@@ -49,111 +50,103 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
   }, [lesson.id]);
 
   async function loadQuiz() {
-    try {
-      setLoading(true);
-      const userId = getOrCreateUserId();
-      const data = await fetchQuiz(userId, lesson.id);
+    setLoading(true);
+    const data = await withApiToast("Failed to load quiz", () =>
+      fetchQuiz(getOrCreateUserId(), lesson.id),
+    );
 
-      if (data.quiz) {
-        const attempts = data.attempts || [];
-        const lastAttempt = attempts[attempts.length - 1];
+    if (data?.quiz) {
+      const attempts = data.attempts || [];
+      const lastAttempt = attempts[attempts.length - 1];
 
-        if (attempts.length > 0) {
-          const savedSelected = localStorage.getItem(
-            `quiz-selected-${data.quiz.id}`,
-          );
+      if (attempts.length > 0) {
+        const savedSelected = localStorage.getItem(
+          `quiz-selected-${data.quiz.id}`,
+        );
 
-          let lastSelected = {};
-          try {
-            lastSelected = savedSelected ? JSON.parse(savedSelected) : {};
-          } catch {}
+        let lastSelected = {};
+        try {
+          lastSelected = savedSelected ? JSON.parse(savedSelected) : {};
+        } catch {}
 
-          setQuizData({
-            id: data.quiz.id,
-            questions: data.quiz.questions,
-            attempts,
-            lastScore: lastAttempt?.score ?? undefined,
-            lastSelected,
-          });
-          setSelected(lastSelected);
-          setSubmitted(true);
-          setShowResult(false);
-        } else {
-          setQuizData({
-            id: data.quiz.id,
-            questions: data.quiz.questions,
-            attempts,
-            lastScore: undefined,
-            lastSelected: undefined,
-          });
-          setSelected({});
-          setSubmitted(false);
-          setShowResult(false);
-        }
+        setQuizData({
+          id: data.quiz.id,
+          questions: data.quiz.questions,
+          attempts,
+          lastScore: lastAttempt?.score ?? undefined,
+          lastSelected,
+        });
+        setSelected(lastSelected);
+        setSubmitted(true);
+        setShowResult(false);
       } else {
-        setQuizData(null);
+        setQuizData({
+          id: data.quiz.id,
+          questions: data.quiz.questions,
+          attempts,
+          lastScore: undefined,
+          lastSelected: undefined,
+        });
+        setSelected({});
         setSubmitted(false);
         setShowResult(false);
       }
-    } catch (error) {
-      console.error("Failed to load quiz:", error);
-    } finally {
-      setLoading(false);
+    } else if (data) {
+      setQuizData(null);
+      setSubmitted(false);
+      setShowResult(false);
     }
+    setLoading(false);
   }
 
   async function handleGenerateQuiz() {
-    try {
-      setGenerating(true);
-      setSubmitted(false);
-      setShowResult(false);
-      setSelected({});
-      setQuizData(null);
-      const userId = getOrCreateUserId();
+    setGenerating(true);
+    setSubmitted(false);
+    setShowResult(false);
+    setSelected({});
+    setQuizData(null);
 
-      await generateQuiz({
+    const ok = await withApiToast("Failed to generate quiz", () =>
+      generateQuiz({
         lessonContent: lesson.content,
         lessonTitle: lesson.title,
-        userId,
+        userId: getOrCreateUserId(),
         lessonId: lesson.id,
-      });
+      }),
+    );
 
-      await loadQuiz();
-    } catch (error) {
-      console.error("Failed to generate quiz:", error);
-    } finally {
-      setGenerating(false);
-    }
+    if (ok !== undefined) await loadQuiz();
+    setGenerating(false);
   }
 
   async function handleSubmitQuiz() {
     if (!quizData) return;
 
-    try {
-      const score = quizData.questions.filter(
-        (q, i) => selected[i] === q.correct,
-      ).length;
+    const score = quizData.questions.filter(
+      (q, i) => selected[i] === q.correct,
+    ).length;
 
-      await submitQuiz({
+    const ok = await withApiToast("Failed to submit quiz", () =>
+      submitQuiz({
         quizId: quizData.id,
         score,
         total: quizData.questions.length,
-      });
+      }),
+    );
 
-      localStorage.setItem(
-        `quiz-selected-${quizData.id}`,
-        JSON.stringify(selected),
-      );
+    if (ok === undefined) return;
 
-      setQuizData((prev) =>
-        prev ? { ...prev, lastScore: score, lastSelected: selected } : prev,
-      );
+    localStorage.setItem(
+      `quiz-selected-${quizData.id}`,
+      JSON.stringify(selected),
+    );
 
-      setSubmitted(true);
-      setShowResult(true);
-    } catch (error) {
-      console.error("Failed to submit quiz:", error);
-    }
+    setQuizData((prev) =>
+      prev ? { ...prev, lastScore: score, lastSelected: selected } : prev,
+    );
+
+    setSubmitted(true);
+    setShowResult(true);
   }
 
   function selectOption(qIndex: number, oIndex: number) {

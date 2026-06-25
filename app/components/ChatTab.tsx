@@ -3,6 +3,12 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Lesson } from "../data/lessons";
 import type { ChatMessage } from "../types/chat";
 import { getOrCreateUserId } from "../../lib/utils/localStorage";
+import { getClientErrorMessage } from "@/lib/api/client";
+import { streamLessonChatWithRetry, transcribeRecording } from "@/lib/api/chat";
+import { fetchMessages } from "@/lib/api/messages";
+import { createSession } from "@/lib/api/sessions";
+import { showError } from "@/lib/utils/toast";
+import { withApiToast } from "@/lib/utils/withApiToast";
 import MessageContent from "./MessageContent";
 import {
   RiSendPlane2Line,
@@ -61,8 +67,10 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     if (!sessionId) return;
 
     async function loadMessages() {
-      const res = await fetch(`/api/messages?sessionId=${sessionId}`);
-      const data = await res.json();
+      const data = await withApiToast("Failed to load messages", () =>
+        fetchMessages(sessionId!),
+      );
+      if (!data) return;
 
       if (data.messages?.length) {
         setMessages(data.messages);
@@ -86,32 +94,27 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     const container = messagesContainerRef.current;
     const prevScrollHeight = container?.scrollHeight || 0;
 
-    try {
-      const res = await fetch(
-        `/api/messages?sessionId=${sessionId}&cursor=${cursor}`,
-      );
-      const data = await res.json();
+    const data = await withApiToast("Failed to load older messages", () =>
+      fetchMessages(sessionId, cursor),
+    );
 
-      if (data.messages?.length) {
-        setMessages((prev) => [...data.messages, ...prev]);
-        setCursor(data.nextCursor);
-        setHasMore(data.nextCursor !== null);
+    if (data?.messages?.length) {
+      setMessages((prev) => [...data.messages, ...prev]);
+      setCursor(data.nextCursor);
+      setHasMore(data.nextCursor !== null);
 
-        setTimeout(() => {
-          if (container) {
-            const newScrollHeight = container.scrollHeight;
-            const scrollDiff = newScrollHeight - prevScrollHeight;
-            container.scrollTop += scrollDiff;
-          }
-        }, 0);
-      } else {
-        setHasMore(false);
-      }
-    } catch (error) {
-      console.error("Failed to load more messages:", error);
-    } finally {
-      setLoadingMore(false);
+      setTimeout(() => {
+        if (container) {
+          const newScrollHeight = container.scrollHeight;
+          const scrollDiff = newScrollHeight - prevScrollHeight;
+          container.scrollTop += scrollDiff;
+        }
+      }, 0);
+    } else if (data) {
+      setHasMore(false);
     }
+
+    setLoadingMore(false);
   }, [cursor, hasMore, loadingMore, sessionId]);
 
   const handleScroll = useCallback(() => {
@@ -156,7 +159,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
       mr.start(250);
       setRecording(true);
     } catch {
-      alert(MIC_DENIED_MSG);
+      showError(MIC_DENIED_MSG);
     }
   }
 
@@ -172,22 +175,12 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     createNewSession();
 
     async function createNewSession() {
-      try {
-        const res = await fetch("/api/sessions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: getOrCreateUserId(),
-            lessonId: lesson.id,
-            title: lesson.title,
-          }),
-        });
-
-        const data = await res.json();
+      const data = await withApiToast("Failed to create chat session", () =>
+        createSession(getOrCreateUserId(), lesson.id, lesson.title),
+      );
+      if (data?.session?.id) {
         setSessionId(data.session.id);
         localStorage.setItem(sessionKey, data.session.id);
-      } catch (error) {
-        console.error("Failed to create session:", error);
       }
     }
   }, [lesson.id, lesson.title]);
@@ -231,30 +224,19 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   }, [recording]);
 
   async function transcribeAudio(blob: Blob) {
-    try {
-      if (blob.size === 0) {
-        alert(
-          "No audio captured. Hold the mic button slightly longer and try again.",
-        );
-        return;
-      }
-
-      const fd = new FormData();
-      const ext = blob.type.includes("mp4")
-        ? "mp4"
-        : blob.type.includes("wav")
-          ? "wav"
-          : blob.type.includes("ogg")
-            ? "ogg"
-            : "webm";
-      fd.append("audio", blob, `recording.${ext}`);
-      const res = await fetch("/api/transcribe", { method: "POST", body: fd });
-      const data = await res.json();
-      if (data.text) setInput(data.text);
-    } catch {
-    } finally {
+    if (blob.size === 0) {
+      showError(
+        "No audio captured. Hold the mic button slightly longer and try again.",
+      );
       setTranscribing(false);
+      return;
     }
+
+    const data = await withApiToast("Transcription failed", () =>
+      transcribeRecording(blob),
+    );
+    if (data?.text) setInput(data.text);
+    setTranscribing(false);
   }
 
   async function sendMessage() {
@@ -262,24 +244,13 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
 
     let currentSessionId = sessionId;
     if (!currentSessionId) {
-      try {
-        const res = await fetch("/api/sessions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: getOrCreateUserId(),
-            lessonId: lesson.id,
-            title: lesson.title,
-          }),
-        });
-        const data = await res.json();
-        currentSessionId = data.session.id;
-        setSessionId(currentSessionId);
-        localStorage.setItem(`sessionId_${lesson.id}`, currentSessionId!);
-      } catch (error) {
-        console.error("Failed to create session:", error);
-        return;
-      }
+      const created = await withApiToast("Failed to create chat session", () =>
+        createSession(getOrCreateUserId(), lesson.id, lesson.title),
+      );
+      if (!created) return;
+      currentSessionId = created.session.id;
+      setSessionId(currentSessionId);
+      localStorage.setItem(`sessionId_${lesson.id}`, currentSessionId);
     }
 
     const userMsg: ChatMessage = { role: "user", content: input };
@@ -290,84 +261,35 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     setMessages((p) => [...p, { role: "assistant", content: "" }]);
 
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: history,
-          sessionId: currentSessionId,
-          lessonContent: lesson.content,
-        }),
+      await streamLessonChatWithRetry({
+        sessionId: currentSessionId,
+        messages: history,
+        lessonContent: lesson.content,
+        lessonId: lesson.id,
+        lessonTitle: lesson.title,
+        userId: getOrCreateUserId(),
+        onChunk: (buffer) => {
+          setMessages((p) => {
+            const u = [...p];
+            u[u.length - 1] = { ...u[u.length - 1], content: buffer };
+            return u;
+          });
+        },
+        onSessionId: (id) => {
+          setSessionId(id);
+          localStorage.setItem(`sessionId_${lesson.id}`, id);
+        },
       });
-
-      if (res.status === 404) {
-        const createRes = await fetch("/api/sessions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: getOrCreateUserId(),
-            lessonId: lesson.id,
-            title: lesson.title,
-          }),
-        });
-        const createData = await createRes.json();
-        const newSessionId = createData.session.id;
-        setSessionId(newSessionId);
-        localStorage.setItem(`sessionId_${lesson.id}`, newSessionId);
-
-        const retryRes = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: history,
-            sessionId: newSessionId,
-            lessonContent: lesson.content,
-          }),
-        });
-
-        if (!retryRes.ok) {
-          throw new Error(`Chat failed: ${retryRes.status}`);
-        }
-
-        const reader = retryRes.body!.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          setMessages((p) => {
-            const u = [...p];
-            u[u.length - 1] = { ...u[u.length - 1], content: buffer };
-            return [...u];
-          });
-        }
-      } else if (!res.ok) {
-        throw new Error(`Chat failed: ${res.status}`);
-      } else {
-        const reader = res.body!.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          setMessages((p) => {
-            const u = [...p];
-            u[u.length - 1] = { ...u[u.length - 1], content: buffer };
-            return [...u];
-          });
-        }
-      }
     } catch (error) {
       console.error("Chat error:", error);
+      showError(getClientErrorMessage(error, "Chat failed"));
       setMessages((p) => {
         const u = [...p];
         u[u.length - 1] = {
           ...u[u.length - 1],
           content: "Sorry, I encountered an error. Please try again.",
         };
-        return [...u];
+        return u;
       });
     }
 

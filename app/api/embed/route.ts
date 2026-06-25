@@ -1,5 +1,6 @@
 import { CohereClient } from "cohere-ai";
 import { prisma } from "@/lib/db/prisma";
+import { jsonApiError } from "@/lib/utils/apiError";
 
 const cohere = new CohereClient({ token: process.env.COHERE_API_KEY });
 
@@ -80,6 +81,6 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error("[RAG] Text embed error:", error);
-    return Response.json({ error: String(error) }, { status: 500 });
+    return jsonApiError(error, "Failed to index text");
   }
 }

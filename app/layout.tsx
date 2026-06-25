@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import AppToaster from "./components/AppToaster";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body className="h-dvh overflow-hidden antialiased">
+        <AppToaster />
         <div className="flex h-dvh w-full min-w-0">{children}</div>
       </body>
     </html>

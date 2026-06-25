@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { Lesson } from "../data/lessons";
 import { RiPencilLine, RiSaveLine, RiStickyNoteLine } from "react-icons/ri";
 import { getOrCreateUserId } from "@/lib/utils/localStorage";
+import { fetchNotes, saveNote } from "@/lib/api/notes";
+import { withApiToast } from "@/lib/utils/withApiToast";
 
 const LABEL_SAVE = "Save Notes";
 const LABEL_EDIT = "Edit";
@@ -25,13 +27,11 @@ export default function NotesTab({ lesson }: { lesson: Lesson }) {
   }, [lesson.id]);
 
   async function loadNotes() {
-    try {
-      setLoading(true);
-      const userId = getOrCreateUserId();
-      const response = await fetch(
-        `/api/notes?userId=${userId}&lessonId=${lesson.id}`,
-      );
-      const data = await response.json();
+    setLoading(true);
+    const data = await withApiToast("Failed to load notes", () =>
+      fetchNotes(getOrCreateUserId(), lesson.id),
+    );
+    if (data) {
       if (data.note) {
         setContent(data.note.content);
         setLocked(true);
@@ -39,37 +39,18 @@ export default function NotesTab({ lesson }: { lesson: Lesson }) {
         setContent("");
         setLocked(false);
       }
-    } catch (error) {
-      console.error("Failed to load notes:", error);
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   }
 
   async function handleSave() {
     if (!content.trim()) return;
-    try {
-      setSaving(true);
-      const userId = getOrCreateUserId();
-      const response = await fetch("/api/notes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          lessonId: lesson.id,
-          content,
-        }),
-      });
-      const data = await response.json();
-      if (data.note) {
-        setLocked(true);
-        console.log("[Notes] Saved successfully");
-      }
-    } catch (error) {
-      console.error("Failed to save notes:", error);
-    } finally {
-      setSaving(false);
-    }
+    setSaving(true);
+    const data = await withApiToast("Failed to save notes", () =>
+      saveNote(getOrCreateUserId(), lesson.id, content),
+    );
+    if (data?.note) setLocked(true);
+    setSaving(false);
   }
 
   function handleEdit() {

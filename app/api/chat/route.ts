@@ -1,5 +1,6 @@
 import { chatWithContext } from "@/lib/ai/chat";
 import { validateChatRequest } from "@/lib/utils/validation";
+import { jsonApiError } from "@/lib/utils/apiError";
 import {
   RATE_LIMITS,
   createRateLimitResponse,
@@ -92,23 +93,14 @@ export async function POST(req: Request) {
         );
       }
 
-      return Response.json(
-        { error: error instanceof Error ? error.message : "Internal error" },
-        { status: 500 },
-      );
+      return jsonApiError(error, "Chat failed", 500);
     }
   } catch (error) {
     console.error("Chat API error:", error);
 
-    const message =
-      error instanceof Error ? error.message : "Internal server error";
+    const status =
+      error instanceof Error && error.message.includes("not found") ? 404 : 500;
 
-    return new Response(JSON.stringify({ error: message }), {
-      status:
-        error instanceof Error && error.message.includes("not found")
-          ? 404
-          : 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonApiError(error, "Chat failed", status);
   }
 }

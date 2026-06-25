@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { jsonApiError } from "@/lib/utils/apiError";
 
 export async function GET(req: Request) {
   try {
@@ -23,10 +24,7 @@ export async function GET(req: Request) {
     return Response.json({ note: note || null });
   } catch (error) {
     console.error("[Notes] GET error:", error);
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Internal error" },
-      { status: 500 },
-    );
+    return jsonApiError(error, "Failed to load notes");
   }
 }
 
@@ -78,9 +76,6 @@ export async function POST(req: Request) {
     }
   } catch (error) {
     console.error("[Notes] POST error:", error);
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Internal error" },
-      { status: 500 },
-    );
+    return jsonApiError(error, "Failed to save notes");
   }
 }

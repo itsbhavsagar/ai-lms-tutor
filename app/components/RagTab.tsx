@@ -10,6 +10,9 @@ import {
   RiUploadCloud2Line,
 } from "react-icons/ri";
 import { getOrCreateUserId } from "@/lib/utils/localStorage";
+import { embedText, streamRagChat, uploadPdf } from "@/lib/api/rag";
+import { readTextStream } from "@/lib/api/client";
+import { withApiToast } from "@/lib/utils/withApiToast";
 import MessageContent from "./MessageContent";
 
 type InputMode = "paste" | "pdf";
@@ -67,29 +70,25 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
 
   async function handleIndex() {
     setIndexing(true);
-    if (mode === "paste") {
-      const res = await fetch("/api/embed", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text,
-          lessonId: lesson.id,
-          userId: getOrCreateUserId(),
-        }),
-      });
-      const data = await res.json();
-      setChunksCreated(data.chunksCreated);
-    } else if (mode === "pdf" && file) {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("lessonId", lesson.id);
-      fd.append("userId", getOrCreateUserId());
-      const res = await fetch("/api/upload-pdf", { method: "POST", body: fd });
-      const data = await res.json();
-      setChunksCreated(data.chunksCreated);
-      setPages(data.pages);
+    const userId = getOrCreateUserId();
+    const result =
+      mode === "paste"
+        ? await withApiToast("Failed to index text", () =>
+            embedText(text, lesson.id, userId),
+          )
+        : file
+          ? await withApiToast("Failed to upload PDF", () =>
+              uploadPdf(file, lesson.id, userId),
+            )
+          : undefined;
+
+    if (result) {
+      setChunksCreated(result.chunksCreated);
+      if ("pages" in result && typeof result.pages === "number") {
+        setPages(result.pages);
+      }
+      setIndexed(true);
     }
-    setIndexed(true);
     setIndexing(false);
   }
 
@@ -102,29 +101,22 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
     setLoading(true);
     setMessages((p) => [...p, { role: "assistant", content: "" }]);
 
-    const res = await fetch("/api/rag-chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: history,
-        lessonId: lesson.id,
-        userId: getOrCreateUserId(),
-      }),
-    });
+    const response = await withApiToast("RAG chat failed", () =>
+      streamRagChat(history, lesson.id, getOrCreateUserId()),
+    );
 
-    const reader = res.body!.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      setMessages((p) => {
-        const u = [...p];
-        u[u.length - 1] = { ...u[u.length - 1], content: buffer };
-        return [...u];
+    if (response) {
+      await readTextStream(response, (buffer) => {
+        setMessages((p) => {
+          const u = [...p];
+          u[u.length - 1] = { ...u[u.length - 1], content: buffer };
+          return u;
+        });
       });
+    } else {
+      setMessages((p) => p.slice(0, -1));
     }
+
     setLoading(false);
   }
 

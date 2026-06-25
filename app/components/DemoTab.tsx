@@ -3,6 +3,9 @@
 import { JSX, useRef, useEffect, useState } from "react";
 import type { ChatMessage } from "../types/chat";
 import MessageContent from "./MessageContent";
+import { streamDemoChat } from "@/lib/api/chat";
+import { readTextStream } from "@/lib/api/client";
+import { withApiToast } from "@/lib/utils/withApiToast";
 import { RiSendPlane2Line, RiPlayCircleLine } from "react-icons/ri";
 
 const BADGE_TEXT = "Live Chat — streaming chat powered by Groq";
@@ -32,25 +35,22 @@ const DemoTab = (): JSX.Element => {
     setLoading(true);
     setMessages((p) => [...p, { role: "assistant", content: "" }]);
 
-    const res = await fetch("/api/demo-chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: history }),
-    });
+    const response = await withApiToast("Chat failed", () =>
+      streamDemoChat(history),
+    );
 
-    const reader = res.body!.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      setMessages((p: ChatMessage[]) => {
-        const u = [...p];
-        u[u.length - 1] = { ...u[u.length - 1], content: buffer };
-        return [...u];
+    if (response) {
+      await readTextStream(response, (buffer) => {
+        setMessages((p: ChatMessage[]) => {
+          const u = [...p];
+          u[u.length - 1] = { ...u[u.length - 1], content: buffer };
+          return u;
+        });
       });
+    } else {
+      setMessages((p) => p.slice(0, -1));
     }
+
     setLoading(false);
   }
 

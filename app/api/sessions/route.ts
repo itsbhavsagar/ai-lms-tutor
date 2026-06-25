@@ -4,6 +4,7 @@ import {
   deleteSession,
 } from "@/lib/db/session";
 import { validateSessionRequest } from "@/lib/utils/validation";
+import { jsonApiError } from "@/lib/utils/apiError";
 import {
   RATE_LIMITS,
   createRateLimitResponse,
@@ -37,16 +38,8 @@ export async function POST(req: Request) {
       },
     );
   } catch (error) {
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : null,
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    console.error("Session create error:", error);
+    return jsonApiError(error, "Failed to create session");
   }
 }
 
@@ -93,16 +86,7 @@ export async function GET(req: Request) {
     );
   } catch (error) {
     console.error("Session list error:", error);
-
-    return Response.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Failed to list sessions",
-      },
-      {
-        status: 500,
-      },
-    );
+    return jsonApiError(error, "Failed to list sessions");
   }
 }
 
@@ -149,15 +133,6 @@ export async function DELETE(req: Request) {
     );
   } catch (error) {
     console.error("Session delete error:", error);
-
-    return Response.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Failed to delete session",
-      },
-      {
-        status: 500,
-      },
-    );
+    return jsonApiError(error, "Failed to delete session");
   }
 }

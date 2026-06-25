@@ -1,5 +1,6 @@
 import Groq from "groq-sdk";
 import { prisma } from "@/lib/db/prisma";
+import { jsonApiError } from "@/lib/utils/apiError";
 
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -58,10 +59,7 @@ export async function POST(req: Request) {
     return Response.json(summaryData);
   } catch (error) {
     console.error("[Summary] POST error:", error);
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Internal error" },
-      { status: 500 },
-    );
+    return jsonApiError(error, "Failed to generate summary");
   }
 }
 
@@ -96,9 +94,6 @@ export async function GET(req: Request) {
     return Response.json({ summary: summaryData });
   } catch (error) {
     console.error("[Summary] GET error:", error);
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Internal error" },
-      { status: 500 },
-    );
+    return jsonApiError(error, "Failed to load summary");
   }
 }

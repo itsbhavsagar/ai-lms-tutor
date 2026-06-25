@@ -1,6 +1,7 @@
 import Groq from "groq-sdk";
 import { CohereClient } from "cohere-ai";
 import { prisma } from "@/lib/db/prisma";
+import { jsonApiError } from "@/lib/utils/apiError";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const cohere = new CohereClient({ token: process.env.COHERE_API_KEY });
@@ -100,12 +101,6 @@ Context:
     });
   } catch (error) {
     console.error("RAG error:", error);
-
-    return Response.json(
-      {
-        error: error instanceof Error ? error.message : "Internal error",
-      },
-      { status: 500 },
-    );
+    return jsonApiError(error, "RAG chat failed");
   }
 }

@@ -1,4 +1,5 @@
 import Groq from "groq-sdk";
+import { jsonApiError } from "@/lib/utils/apiError";
 
 const client = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     if (!body?.messages || !Array.isArray(body.messages)) {
-      return new Response("Invalid payload", { status: 400 });
+      return Response.json({ error: "Invalid payload" }, { status: 400 });
     }
 
     const cleanMessages = sanitizeMessages(body.messages);
@@ -93,6 +94,6 @@ Rules:
     });
   } catch (err) {
     console.error("API error:", err);
-    return new Response("Server error", { status: 500 });
+    return jsonApiError(err, "Chat failed");
   }
 }

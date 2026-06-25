@@ -7,6 +7,8 @@ import {
   RiBookOpenLine,
 } from "react-icons/ri";
 import { getOrCreateUserId } from "@/lib/utils/localStorage";
+import { fetchSummary, generateSummary } from "@/lib/api/summary";
+import { withApiToast } from "@/lib/utils/withApiToast";
 
 type Summary = {
   overview: string;
@@ -33,46 +35,27 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
   }, [lesson.id]);
 
   async function loadSummary() {
-    try {
-      setLoading(true);
-      const userId = getOrCreateUserId();
-      const response = await fetch(
-        `/api/summary?userId=${userId}&lessonId=${lesson.id}`,
-      );
-      const data = await response.json();
-      if (data.summary) {
-        setSummary(data.summary);
-      }
-    } catch (error) {
-      console.error("Failed to load summary:", error);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    const data = await withApiToast("Failed to load summary", () =>
+      fetchSummary(getOrCreateUserId(), lesson.id),
+    );
+    if (data?.summary) setSummary(data.summary);
+    setLoading(false);
   }
 
-  async function generateSummary() {
-    try {
-      setGenerating(true);
-      setSummary(null);
-      const userId = getOrCreateUserId();
-      const res = await fetch("/api/summary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lessonContent: lesson.content,
-          lessonTitle: lesson.title,
-          userId,
-          lessonId: lesson.id,
-        }),
-      });
-      const data = await res.json();
-      setSummary(data);
-      console.log("[Summary] Generated and saved");
-    } catch (error) {
-      console.error("Failed to generate summary:", error);
-    } finally {
-      setGenerating(false);
-    }
+  async function handleGenerateSummary() {
+    setGenerating(true);
+    setSummary(null);
+    const data = await withApiToast("Failed to generate summary", () =>
+      generateSummary({
+        lessonContent: lesson.content,
+        lessonTitle: lesson.title,
+        userId: getOrCreateUserId(),
+        lessonId: lesson.id,
+      }),
+    );
+    if (data) setSummary(data);
+    setGenerating(false);
   }
 
   return (
@@ -85,7 +68,7 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
           {generating ? LABEL_GENERATING : LABEL_HEADING}
         </h2>
         <button
-          onClick={generateSummary}
+          onClick={handleGenerateSummary}
           disabled={generating}
           className="flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-semibold text-white transition-opacity sm:w-auto"
           style={{

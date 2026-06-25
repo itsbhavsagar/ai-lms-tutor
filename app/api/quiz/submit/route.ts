@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { jsonApiError } from "@/lib/utils/apiError";
 
 export async function POST(req: Request) {
   try {
@@ -26,9 +27,6 @@ export async function POST(req: Request) {
     return Response.json({ attempt });
   } catch (error) {
     console.error("[Quiz Submit] POST error:", error);
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Internal error" },
-      { status: 500 },
-    );
+    return jsonApiError(error, "Failed to submit quiz");
   }
 }

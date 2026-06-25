@@ -1,4 +1,5 @@
 import Groq from "groq-sdk";
+import { jsonApiError } from "@/lib/utils/apiError";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -73,6 +74,6 @@ export async function POST(req: Request) {
     return Response.json({ text: transcription.text });
   } catch (error) {
     console.error("Transcription error:", error);
-    return Response.json({ error: String(error) }, { status: 500 });
+    return jsonApiError(error, "Transcription failed");
   }
 }
