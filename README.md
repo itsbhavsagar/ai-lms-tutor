@@ -2,7 +2,7 @@
 
 An **AI-first learning platform** for software engineers. Lessons are structured **metadata** (objectives, concepts, interview focus, production topics) — not long static textbooks. Groq and Cohere generate explanations, quizzes, personalized reviews, and mock interviews from that metadata at runtime.
 
-**Live demo:** [ai-lms-tutor.vercel.app](https://ai-lms-tutor.vercel.app)
+**Live demo:** [ai-lms-tutor.vercel.app](https://ai-lms-tutor-sigma.vercel.app/)
 
 ---
 
