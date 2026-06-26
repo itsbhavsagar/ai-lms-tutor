@@ -1,6 +1,7 @@
 import { CohereClient } from "cohere-ai";
 import { prisma } from "@/lib/db/prisma";
 import { jsonApiError } from "@/lib/utils/apiError";
+import { extractTextFromPDF } from "@/lib/utils/pdf";
 
 const cohere = new CohereClient({ token: process.env.COHERE_API_KEY });
 
@@ -22,28 +23,6 @@ function chunkText(text: string, chunkSize = 300): string[] {
   }
   if (current.trim().length > 20) chunks.push(current.trim());
   return chunks;
-}
-
-async function extractTextFromPDF(buffer: ArrayBuffer): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const PDFParser = require("pdf2json");
-    const pdfParser = new PDFParser();
-
-    pdfParser.on("pdfParser_dataError", (err: any) => {
-      reject(err.parserError);
-    });
-
-    pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
-      const text = pdfData.Pages.map((page: any) =>
-        page.Texts.map((t: any) =>
-          decodeURIComponent(t.R.map((r: any) => r.T).join("")),
-        ).join(" "),
-      ).join("\n\n");
-      resolve(text);
-    });
-
-    pdfParser.parseBuffer(Buffer.from(buffer));
-  });
 }
 
 export async function POST(req: Request) {

@@ -1,19 +1,35 @@
+import PDFParser from "pdf2json";
+
+type PdfTextRun = { T: string };
+type PdfTextItem = { R: PdfTextRun[] };
+type PdfPage = { Texts: PdfTextItem[] };
+type PdfDocument = { Pages: PdfPage[] };
+type PdfParserError = Error | { parserError: Error };
+
+function pdfParseErrorMessage(err: PdfParserError): string {
+  if ("parserError" in err) {
+    return err.parserError.message;
+  }
+  return err.message;
+}
+
+function pageText(page: PdfPage): string {
+  return page.Texts.map((t) =>
+    decodeURIComponent(t.R.map((r) => r.T).join("")),
+  ).join(" ");
+}
+
 export async function extractTextFromPDF(buffer: ArrayBuffer): Promise<string> {
   return new Promise((resolve, reject) => {
-    const PDFParser = require("pdf2json");
     const pdfParser = new PDFParser();
 
-    pdfParser.on("pdfParser_dataError", (err: any) => {
-      reject(new Error(`PDF parse error: ${err.parserError}`));
+    pdfParser.on("pdfParser_dataError", (err: PdfParserError) => {
+      reject(new Error(`PDF parse error: ${pdfParseErrorMessage(err)}`));
     });
 
-    pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
+    pdfParser.on("pdfParser_dataReady", (pdfData: PdfDocument) => {
       try {
-        const text = pdfData.Pages.map((page: any) =>
-          page.Texts.map((t: any) =>
-            decodeURIComponent(t.R.map((r: any) => r.T).join("")),
-          ).join(" "),
-        ).join("\n\n");
+        const text = pdfData.Pages.map(pageText).join("\n\n");
 
         if (!text.trim()) {
           reject(new Error("No text extracted from PDF"));

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
-import { lessons, getLessonById } from "@/lib/curriculum";
+import { getLessonById } from "@/lib/curriculum";
 import { getKnowledgeNode } from "@/lib/curriculum/knowledge-graph";
 
 export type LearnerProfile = {

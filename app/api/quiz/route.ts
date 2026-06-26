@@ -91,7 +91,7 @@ export async function POST(req: Request) {
       create: { id: userId, email: `${userId}@temp.local` },
     });
 
-    const quiz = await prisma.quiz.create({
+    await prisma.quiz.create({
       data: {
         userId,
         lessonId,

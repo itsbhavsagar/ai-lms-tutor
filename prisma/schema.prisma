@@ -94,12 +94,13 @@ model Quiz {
 }
 
 model QuizAttempt {
-  id        String   @id @default(cuid())
-  quizId    String
-  score     Int
-  total     Int
-  createdAt DateTime @default(now())
-  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  quizId       String
+  score        Int
+  total        Int
+  weakConcepts String[] @default([])
+  createdAt    DateTime @default(now())
+  quiz         Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
   @@index([quizId])
 }

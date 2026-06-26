@@ -1,4 +1,3 @@
-import { prisma } from "@/lib/db/prisma";
 import { buildLearnerProfileSafe } from "@/lib/db/learner-profile";
 import { jsonApiError } from "@/lib/utils/apiError";
 

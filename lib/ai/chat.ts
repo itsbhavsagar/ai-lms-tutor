@@ -1,4 +1,5 @@
 import { Groq } from "groq-sdk";
+import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
 import { Message } from "@prisma/client";
 import {
   buildMentorTurnPlan,
@@ -67,12 +68,14 @@ function buildMessages(
   systemPrompt: string,
   contextMessages: Message[],
   userMessage: string,
-): any[] {
-  const messages = [{ role: "system", content: systemPrompt }];
+): ChatCompletionMessageParam[] {
+  const messages: ChatCompletionMessageParam[] = [
+    { role: "system", content: systemPrompt },
+  ];
 
   for (const msg of contextMessages) {
     messages.push({
-      role: msg.role,
+      role: msg.role as "user" | "assistant",
       content: msg.content,
     });
   }
@@ -80,13 +83,6 @@ function buildMessages(
   messages.push({ role: "user", content: userMessage });
 
   return messages;
-}
-
-function estimateChatTokens(messages: any[]): number {
-  return messages.reduce(
-    (sum, msg) => sum + estimateTokenCount(msg.content),
-    0,
-  );
 }
 
 export async function chatWithContext(

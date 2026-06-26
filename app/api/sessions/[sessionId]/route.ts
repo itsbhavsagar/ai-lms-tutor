@@ -1,4 +1,3 @@
-import { prisma } from "@/lib/db/prisma";
 import { deleteSession } from "@/lib/db/session";
 import { jsonApiError } from "@/lib/utils/apiError";
 import {

@@ -176,13 +176,19 @@ export default function Home() {
               <RecruiterDashboard lessonId={selectedLesson.id} />
             ) : (
               <>
-                {activeTab === "learn" && <ChatTab lesson={selectedLesson} />}
-                {activeTab === "practice" && <QuizTab lesson={selectedLesson} />}
+                {activeTab === "learn" && (
+                  <ChatTab key={selectedLesson.id} lesson={selectedLesson} />
+                )}
+                {activeTab === "practice" && (
+                  <QuizTab key={selectedLesson.id} lesson={selectedLesson} />
+                )}
                 {activeTab === "review" && <SummaryTab lesson={selectedLesson} />}
                 {activeTab === "interview" && (
                   <InterviewTab lesson={selectedLesson} />
                 )}
-                {activeTab === "notes" && <NotesTab lesson={selectedLesson} />}
+                {activeTab === "notes" && (
+                  <NotesTab key={selectedLesson.id} lesson={selectedLesson} />
+                )}
                 {activeTab === "rag" && <RagTab lesson={selectedLesson} />}
                 {activeTab === "live-chat" && <DemoTab />}
               </>

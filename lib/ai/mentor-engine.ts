@@ -440,10 +440,7 @@ function formatOffTopicInstructions(
   return lines.join("\n");
 }
 
-function formatOnTopicInstructions(
-  plan: MentorTurnPlan,
-  lesson: Lesson,
-): string {
+function formatOnTopicInstructions(plan: MentorTurnPlan): string {
   if (plan.consecutiveOffTopicCount > 0 && !plan.currentMessageOffTopic) {
     return [
       "## This turn: BACK ON TRACK",
@@ -489,7 +486,7 @@ export function formatMentorTurnPlan(
 ): string {
   const turnBlock = plan.currentMessageOffTopic
     ? formatOffTopicInstructions(plan, lesson)
-    : formatOnTopicInstructions(plan, lesson);
+    : formatOnTopicInstructions(plan);
 
   return [
     "## Mentor Personality Engine (this turn)",

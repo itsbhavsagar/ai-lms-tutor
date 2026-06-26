@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { getOrCreateUserId } from "@/lib/utils/localStorage";
 
+function subscribe() {
+  return () => {};
+}
+
 export function useUserId(): string | null {
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setUserId(getOrCreateUserId());
-  }, []);
-
-  return userId;
+  return useSyncExternalStore(subscribe, getOrCreateUserId, () => null);
 }

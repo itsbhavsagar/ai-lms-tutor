@@ -1,5 +1,5 @@
 import { lessons, tracks } from "./lessons";
-import type { Lesson, Track } from "./types";
+import type { Lesson } from "./types";
 
 export function getLessonById(id: string): Lesson | undefined {
   return lessons.find((lesson) => lesson.id === id);

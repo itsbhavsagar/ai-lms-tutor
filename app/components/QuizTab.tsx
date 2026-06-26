@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Lesson } from "../data/lessons";
 import type { QuizQuestion } from "../types/quiz";
 import {
@@ -72,35 +72,13 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
   const generateMutation = useGenerateQuizMutation(lesson.id);
   const submitMutation = useSubmitQuizMutation(lesson.id);
 
-  const [selected, setSelected] = useState<Record<number, number>>({});
-  const [submitted, setSubmitted] = useState(false);
+  const [draftSelected, setDraftSelected] = useState<Record<number, number>>({});
+  const [draftSubmitted, setDraftSubmitted] = useState(false);
 
   const quizData = buildQuizViewModel(data);
   const hasAttempts = (quizData?.attempts.length ?? 0) > 0;
-
-  useEffect(() => {
-    setSubmitted(false);
-    setSelected({});
-  }, [lesson.id]);
-
-  useEffect(() => {
-    if (!quizData) return;
-
-    if (hasAttempts) {
-      const savedSelected = localStorage.getItem(
-        `quiz-selected-${quizData.id}`,
-      );
-      try {
-        setSelected(savedSelected ? JSON.parse(savedSelected) : {});
-      } catch {
-        setSelected({});
-      }
-      setSubmitted(true);
-    } else {
-      setSelected({});
-      setSubmitted(false);
-    }
-  }, [quizData?.id, hasAttempts]);
+  const selected = hasAttempts ? (quizData?.lastSelected ?? {}) : draftSelected;
+  const submitted = hasAttempts || draftSubmitted;
 
   const generating = generateMutation.isPending;
   const questions = quizData?.questions || [];
@@ -127,8 +105,8 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
       : null;
 
   function handleGenerateQuiz() {
-    setSubmitted(false);
-    setSelected({});
+    setDraftSubmitted(false);
+    setDraftSelected({});
     generateMutation.mutate();
   }
 
@@ -157,7 +135,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
             `quiz-selected-${quizData.id}`,
             JSON.stringify(selected),
           );
-          setSubmitted(true);
+          setDraftSubmitted(true);
         },
       },
     );
@@ -165,7 +143,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
 
   function selectOption(qIndex: number, oIndex: number) {
     if (submitted) return;
-    setSelected((p) => ({ ...p, [qIndex]: oIndex }));
+    setDraftSelected((p) => ({ ...p, [qIndex]: oIndex }));
   }
 
   return (

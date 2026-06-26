@@ -56,7 +56,7 @@ export async function POST(req: Request) {
       create: { id: userId, email: `${userId}@temp.local` },
     });
 
-    const summary = await prisma.summary.create({
+    await prisma.summary.create({
       data: {
         userId,
         lessonId,

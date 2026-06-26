@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Lesson } from "../data/lessons";
 import {
@@ -59,7 +59,7 @@ export default function NotesTab({ lesson }: NotesTabProps) {
   const updateMutation = useUpdateNoteMutation(lesson.id);
   const deleteMutation = useDeleteNoteMutation(lesson.id);
 
-  const notes = data?.notes ?? [];
+  const notes = useMemo(() => data?.notes ?? [], [data?.notes]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -82,17 +82,6 @@ export default function NotesTab({ lesson }: NotesTabProps) {
     setLocked(false);
     setMobileShowEditor(false);
   }, []);
-
-  useEffect(() => {
-    resetEditor();
-  }, [lesson.id, resetEditor]);
-
-  useEffect(() => {
-    if (!selectedId || isDraft) return;
-    if (!notes.some((n) => n.id === selectedId)) {
-      resetEditor();
-    }
-  }, [notes, selectedId, isDraft, resetEditor]);
 
   const selectNote = useCallback(
     (note: NoteItem) => {

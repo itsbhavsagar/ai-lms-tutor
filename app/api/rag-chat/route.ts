@@ -6,8 +6,6 @@ import { jsonApiError } from "@/lib/utils/apiError";
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const cohere = new CohereClient({ token: process.env.COHERE_API_KEY });
 
-type Message = { role: "user" | "assistant"; content: string };
-
 function cosineSimilarity(a: number[], b: number[]) {
   const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
   const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Lesson } from "../data/lessons";
 import type { ChatMessage } from "../types/chat";
@@ -64,7 +64,9 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     useSessionsQuery(lesson.id);
   const deleteSessionMutation = useDeleteSessionMutation(lesson.id);
 
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messagesOverride, setMessagesOverride] = useState<
+    ChatMessage[] | null
+  >(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [streamPhase, setStreamPhase] = useState<StreamPhase>("idle");
@@ -72,15 +74,57 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   const [transcribing, setTranscribing] = useState(false);
   const [showMicHint, setShowMicHint] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionIdOverride, setSessionIdOverride] = useState<
+    string | null | undefined
+  >(undefined);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const sessions = sessionsData?.sessions ?? [];
   const savedSessions = sessions.filter((session) => session.messageCount > 0);
   const sessionIdsKey = savedSessions.map((session) => session.id).join(",");
 
+  const restoredSessionId = useMemo(() => {
+    if (!sessionsLoaded || !sessionIdsKey) return null;
+    const savedId = readLessonSessionId(lesson.id);
+    if (!savedId || !sessionIdsKey.split(",").includes(savedId)) return null;
+    return savedId;
+  }, [sessionsLoaded, sessionIdsKey, lesson.id]);
+
+  useEffect(() => {
+    if (!sessionsLoaded) return;
+    const savedId = readLessonSessionId(lesson.id);
+    if (!savedId) return;
+    if (!sessionIdsKey || !sessionIdsKey.split(",").includes(savedId)) {
+      clearLessonSessionId(lesson.id);
+    }
+  }, [sessionsLoaded, sessionIdsKey, lesson.id]);
+
+  const sessionId =
+    sessionIdOverride !== undefined ? sessionIdOverride : restoredSessionId;
+
+  const setSessionId = useCallback((id: string | null) => {
+    setSessionIdOverride(id);
+  }, []);
+
   const messagesQuery = useMessagesQuery(sessionId);
   const updateMessagesCache = useUpdateMessagesCache(sessionId);
+
+  const queryMessages = useMemo(() => {
+    if (!sessionId || !messagesQuery.isSuccess) return [];
+    return flattenMessages(messagesQuery.data);
+  }, [sessionId, messagesQuery.data, messagesQuery.isSuccess]);
+
+  const messages = messagesOverride ?? queryMessages;
+
+  const setMessages = useCallback(
+    (updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
+      setMessagesOverride((prevOverride) => {
+        const base = prevOverride ?? queryMessages;
+        return typeof updater === "function" ? updater(base) : updater;
+      });
+    },
+    [queryMessages],
+  );
 
   const loadingMore = messagesQuery.isFetchingNextPage;
   const hasMore = messagesQuery.hasNextPage ?? false;
@@ -113,61 +157,6 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     !sessionId && !loading && streamPhase === "idle" && !isLoadingHistory;
 
   useEffect(() => {
-    setMessages([]);
-    setInput("");
-    setSessionId(null);
-    setStreamPhase("idle");
-    setSidebarOpen(false);
-  }, [lesson.id]);
-
-  useEffect(() => {
-    if (!sessionsLoaded) return;
-
-    const savedId = readLessonSessionId(lesson.id);
-
-    if (!sessionIdsKey) {
-  
-      if (savedId && sessionId === savedId) return;
-      if (savedId) clearLessonSessionId(lesson.id);
-      return;
-    }
-
-    if (!savedId) return;
-
-    if (sessionIdsKey.split(",").includes(savedId)) {
-      if (sessionId !== savedId) {
-        setSessionId(savedId);
-      }
-    } else {
-      clearLessonSessionId(lesson.id);
-    }
-  }, [lesson.id, sessionsLoaded, sessionIdsKey, sessionId]);
-
-  useEffect(() => {
-    if (!sessionId && !loading && streamPhase === "idle") {
-      setMessages([]);
-    }
-  }, [sessionId, loading, streamPhase]);
-
-  useEffect(() => {
-    if (!sessionId || loading || streamPhase !== "idle") return;
-    if (messages.length > 0) return;
-    if (!messagesQuery.isSuccess) return;
-
-    const fromQuery = flattenMessages(messagesQuery.data);
-    if (fromQuery.length > 0) {
-      setMessages(fromQuery);
-    }
-  }, [
-    sessionId,
-    messagesQuery.data,
-    messagesQuery.isSuccess,
-    loading,
-    streamPhase,
-    messages.length,
-  ]);
-
-  useEffect(() => {
     if (!shouldAutoScroll) return;
 
     const container = messagesContainerRef.current;
@@ -191,17 +180,17 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     setSessionId(created.session.id);
     persistLessonSessionId(lesson.id, created.session.id);
     return created.session.id;
-  }, [sessionId, userId, createSessionAsync, lesson.id, lesson.title]);
+  }, [sessionId, userId, createSessionAsync, lesson.id, lesson.title, setSessionId]);
 
   const selectSession = useCallback(
     (nextSessionId: string) => {
-      setSessionId(nextSessionId);
+      setSessionIdOverride(nextSessionId);
       persistLessonSessionId(lesson.id, nextSessionId);
       setStreamPhase("idle");
       setShouldAutoScroll(true);
 
       const cached = readCachedMessages(queryClient, nextSessionId);
-      setMessages(cached);
+      setMessagesOverride(cached.length > 0 ? cached : null);
 
       if (cached.length === 0) {
         void queryClient.invalidateQueries({
@@ -213,8 +202,8 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   );
 
   const handleNewChat = useCallback(() => {
-    setSessionId(null);
-    setMessages([]);
+    setSessionIdOverride(null);
+    setMessagesOverride([]);
     setInput("");
     setStreamPhase("idle");
     setShouldAutoScroll(true);
@@ -237,8 +226,8 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
         onSuccess: () => {
           showSuccess("Chat deleted");
           if (sessionId === targetSessionId) {
-            setSessionId(null);
-            setMessages([]);
+            setSessionIdOverride(null);
+            setMessagesOverride([]);
             setInput("");
             clearLessonSessionId(lesson.id);
           }
@@ -320,6 +309,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
         await transcribeAudio(audioBlob);
       };
       mr.start(250);
+      setRecordingSeconds(0);
       setRecording(true);
     } catch {
       showError(MIC_DENIED_MSG);
@@ -330,6 +320,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     if (mediaRecorderRef.current && recording) {
       mediaRecorderRef.current.stop();
       setRecording(false);
+      setRecordingSeconds(0);
       setTranscribing(true);
     }
     setShowMicHint(false);
@@ -352,10 +343,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   }, [recording, stopRecording]);
 
   useEffect(() => {
-    if (!recording) {
-      setRecordingSeconds(0);
-      return;
-    }
+    if (!recording) return;
 
     const timer = window.setInterval(() => {
       setRecordingSeconds((prev) => prev + 1);
@@ -428,6 +416,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
         queryKey: queryKeys.messages(currentSessionId),
       });
       updateMessagesCache(finalMessages);
+      setMessagesOverride(null);
       if (userId) {
         queryClient.invalidateQueries({
           queryKey: queryKeys.sessions(userId, lesson.id),

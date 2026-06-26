@@ -13,13 +13,15 @@ type Message = {
 const MAX_HISTORY = 4;
 const MAX_CHARS = 2000;
 
-function sanitizeMessages(messages: any[]): Message[] {
+function sanitizeMessages(messages: unknown[]): Message[] {
   return messages
     .filter(
-      (m) =>
-        (m.role === "user" || m.role === "assistant") &&
-        typeof m.content === "string" &&
-        m.content.trim().length > 0,
+      (m): m is Message =>
+        typeof m === "object" &&
+        m !== null &&
+        ((m as Message).role === "user" || (m as Message).role === "assistant") &&
+        typeof (m as Message).content === "string" &&
+        (m as Message).content.trim().length > 0,
     )
     .map((m) => ({
       role: m.role,
