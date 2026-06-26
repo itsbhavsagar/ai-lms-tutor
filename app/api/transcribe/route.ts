@@ -8,14 +8,6 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     const audio = formData.get("audio") as File;
     const originalName = audio?.name?.toLowerCase?.() || "";
-    console.log(
-      "Audio type:",
-      audio.type,
-      "Size:",
-      audio.size,
-      "Name:",
-      audio.name,
-    );
 
     if (!audio) {
       return Response.json({ error: "No audio file" }, { status: 400 });

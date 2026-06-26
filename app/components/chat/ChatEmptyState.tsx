@@ -39,17 +39,14 @@ export default function ChatEmptyState({
             className="text-[14px] font-semibold tracking-tight"
             style={{ color: "var(--text)" }}
           >
-            Ask your AI tutor anything
+            Your AI mentor for {lesson.title}
           </h3>
           <p
             className="text-[12px] leading-relaxed"
             style={{ color: "var(--text-muted)" }}
           >
-            Get explanations and practice questions about{" "}
-            <span className="font-medium" style={{ color: "var(--text)" }}>
-              {lesson.title}
-            </span>
-            .
+            I teach through questions, adapt to what you know, and coach you for
+            interviews — pick a starting point below.
           </p>
         </div>
       </div>
@@ -61,7 +58,7 @@ export default function ChatEmptyState({
             type="button"
             disabled={disabled}
             onClick={() => onSelectSuggestion(question)}
-            className={`${btnInteractive} suggestion-chip rounded-xl border px-3 py-2.5 text-left text-[12px] leading-snug hover:border-[var(--accent-border)] hover:bg-[var(--bg-panel)] disabled:opacity-50`}
+            className={`${btnInteractive} suggestion-chip rounded-xl border px-3 py-2.5 text-left text-[12px] leading-snug hover:border-(--accent-border) hover:bg-(--bg-panel) disabled:opacity-50`}
             style={{
               background: "var(--bg-panel)",
               borderColor: "var(--border-strong)",

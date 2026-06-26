@@ -107,7 +107,7 @@ export default function ChatSidebar({
               return (
                 <div
                   key={session.id}
-                  className="group flex min-w-0 items-center gap-0.5 rounded-lg transition-colors hover:bg-[var(--border)]/40"
+                  className="group flex min-w-0 items-center gap-0.5 rounded-lg transition-colors hover:bg-(--border)/40"
                   style={{
                     background: active ? "var(--accent-soft)" : "transparent",
                   }}
@@ -130,7 +130,7 @@ export default function ChatSidebar({
                   <button
                     type="button"
                     onClick={() => onDelete(session.id)}
-                    disabled={isDeleting || disabled}
+                    disabled={isDeleting || disabled || !!deletingSessionId}
                     className={`${chatBtnSubtleClass} mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100`}
                     style={{ color: "var(--red)" }}
                     aria-label={`Delete ${label}`}
@@ -147,15 +147,36 @@ export default function ChatSidebar({
   );
 }
 
+const pendingDeleteConfirmations = new Set<string>();
+
+export function dismissDeleteSessionToast(sessionId: string): void {
+  pendingDeleteConfirmations.delete(sessionId);
+  toast.dismiss(`delete-session-${sessionId}`);
+}
+
 export function confirmDeleteSession(
+  sessionId: string,
   preview: string,
   onDelete: () => void,
 ): void {
+  if (pendingDeleteConfirmations.has(sessionId)) {
+    return;
+  }
+
+  pendingDeleteConfirmations.add(sessionId);
+
   toast(`Delete "${preview}"?`, {
+    id: `delete-session-${sessionId}`,
     description: "This conversation cannot be undone.",
     action: {
       label: "Delete",
-      onClick: onDelete,
+      onClick: () => {
+        dismissDeleteSessionToast(sessionId);
+        onDelete();
+      },
+    },
+    onDismiss: () => {
+      pendingDeleteConfirmations.delete(sessionId);
     },
   });
 }

@@ -14,27 +14,21 @@ export function useQuizQuery(lessonId: string) {
   });
 }
 
-export function useGenerateQuizMutation(lesson: {
-  id: string;
-  title: string;
-  content: string;
-}) {
+export function useGenerateQuizMutation(lessonId: string) {
   const userId = useUserId();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: () =>
       generateQuiz({
-        lessonContent: lesson.content,
-        lessonTitle: lesson.title,
         userId: userId!,
-        lessonId: lesson.id,
+        lessonId,
       }),
     meta: { errorMessage: "Failed to generate quiz" },
     onSuccess: () => {
       if (!userId) return;
       queryClient.invalidateQueries({
-        queryKey: queryKeys.quiz(userId, lesson.id),
+        queryKey: queryKeys.quiz(userId, lessonId),
       });
     },
   });
@@ -45,13 +39,20 @@ export function useSubmitQuizMutation(lessonId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: { quizId: string; score: number; total: number }) =>
-      submitQuiz(payload),
+    mutationFn: (payload: {
+      quizId: string;
+      score: number;
+      total: number;
+      weakConcepts?: string[];
+    }) => submitQuiz(payload),
     meta: { errorMessage: "Failed to submit quiz" },
     onSuccess: () => {
       if (!userId) return;
       queryClient.invalidateQueries({
         queryKey: queryKeys.quiz(userId, lessonId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.learnerProfile(userId, lessonId),
       });
     },
   });

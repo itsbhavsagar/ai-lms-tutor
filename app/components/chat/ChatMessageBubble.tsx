@@ -54,7 +54,7 @@ export default function ChatMessageBubble({
 
       <div className="flex min-w-0 max-w-[85%] flex-col gap-0.5 sm:max-w-[80%]">
         <div
-          className={`stream-bubble relative min-w-0 break-words rounded-xl px-3 py-2.5 text-[13px] leading-relaxed sm:px-3.5 ${
+          className={`stream-bubble relative min-w-0 wrap-wrap-break-word rounded-xl px-3 py-2.5 text-[13px] leading-relaxed sm:px-3.5 ${
             isStreaming ? "is-streaming" : ""
           }`}
           style={
@@ -75,7 +75,7 @@ export default function ChatMessageBubble({
           {isThinking ? (
             <ChatThinkingIndicator />
           ) : isUser ? (
-            <span className="whitespace-pre-wrap break-words">
+            <span className="whitespace-pre-wrap wrap-wrap-break-word">
               {message.content}
             </span>
           ) : (

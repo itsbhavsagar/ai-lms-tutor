@@ -1,12 +1,14 @@
-import type { Lesson } from "@/app/data/lessons";
+import type { Lesson } from "@/lib/curriculum/types";
 
 export function getSuggestedQuestions(lesson: Lesson): string[] {
-  const topic = lesson.title.replace(/^[^\w]+/, "").trim();
+  const concept = lesson.concepts[0] ?? lesson.title;
+  const interview = lesson.interviewFocus[0] ?? concept;
+  const production = lesson.productionTopics[0];
 
   return [
-    `Explain the key ideas of ${topic} in simple terms`,
-    `What are the most important things to remember about ${topic}?`,
-    `Give me a quick summary of ${topic}`,
-    `Quiz me with 3 questions about ${topic}`,
+    `Quiz me on ${concept} with a scenario and A/B/C options`,
+    `Give me a production example of ${production ?? concept}`,
+    `Ask me an interview question about ${interview}`,
+    `Give me a 60-second summary of ${lesson.title}`,
   ];
 }

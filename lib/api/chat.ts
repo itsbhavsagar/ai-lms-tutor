@@ -9,17 +9,30 @@ type TranscribeResponse = {
 export function streamLessonChat(
   sessionId: string,
   messages: ChatMessage[],
-  lessonContent: string,
+  lessonId: string,
+  userId: string,
 ) {
   return apiStreamPost(
     "/api/chat",
-    { messages, sessionId, lessonContent },
+    { messages, sessionId, lessonId, userId },
     "Chat failed",
   );
 }
 
 export function streamDemoChat(messages: ChatMessage[]) {
   return apiStreamPost("/api/demo-chat", { messages }, "Chat failed");
+}
+
+export function streamInterviewChat(
+  messages: ChatMessage[],
+  lessonId: string,
+  userId: string,
+) {
+  return apiStreamPost(
+    "/api/interview",
+    { messages, lessonId, userId },
+    "Interview failed",
+  );
 }
 
 export function transcribeRecording(blob: Blob) {
@@ -42,7 +55,6 @@ export function transcribeRecording(blob: Blob) {
 export async function streamLessonChatWithRetry(params: {
   sessionId: string;
   messages: ChatMessage[];
-  lessonContent: string;
   lessonId: string;
   lessonTitle: string;
   userId: string;
@@ -53,7 +65,8 @@ export async function streamLessonChatWithRetry(params: {
     const response = await streamLessonChat(
       sessionId,
       params.messages,
-      params.lessonContent,
+      params.lessonId,
+      params.userId,
     );
     await readTextStream(response, params.onChunk);
     return sessionId;

@@ -1,17 +1,20 @@
 "use client";
 import {
   RiChatSmile2Line,
+  RiFlashlightLine,
   RiFileTextLine,
+  RiPlayCircleLine,
   RiSparkling2Line,
   RiStickyNoteLine,
-  RiFlashlightLine,
-  RiPlayCircleLine,
+  RiUserVoiceLine,
 } from "react-icons/ri";
+import { WORKFLOW_STEPS } from "@/lib/learning/journey";
 
 export type TabType =
-  | "chat"
-  | "quiz"
-  | "summary"
+  | "learn"
+  | "practice"
+  | "review"
+  | "interview"
   | "notes"
   | "rag"
   | "live-chat";
@@ -22,14 +25,26 @@ type TabDef = {
   Icon: React.ComponentType<{ size?: number; color?: string }>;
 };
 
-const TABS: TabDef[] = [
-  { id: "chat", label: "Chat", Icon: RiChatSmile2Line },
-  { id: "quiz", label: "Quiz", Icon: RiFileTextLine },
-  { id: "summary", label: "Summary", Icon: RiSparkling2Line },
+const WORKFLOW_TABS: TabDef[] = WORKFLOW_STEPS.map((step) => ({
+  id: step.tab,
+  label: step.label,
+  Icon:
+    step.id === "learn"
+      ? RiChatSmile2Line
+      : step.id === "practice"
+        ? RiFileTextLine
+        : step.id === "interview"
+          ? RiUserVoiceLine
+          : RiSparkling2Line,
+}));
+
+const UTILITY_TABS: TabDef[] = [
   { id: "notes", label: "Notes", Icon: RiStickyNoteLine },
   { id: "rag", label: "RAG Chat", Icon: RiFlashlightLine },
   { id: "live-chat", label: "Live Chat", Icon: RiPlayCircleLine },
 ];
+
+const TABS: TabDef[] = [...WORKFLOW_TABS, ...UTILITY_TABS];
 
 type Props = {
   activeTab: TabType;
@@ -47,12 +62,19 @@ export default function Tabs({
       <div className="flex min-w-max items-center gap-1">
         {TABS.map(({ id, label, Icon }) => {
           const active = showActiveIndicator && activeTab === id;
+          const isFirstUtility = id === "notes";
+
           return (
             <button
               key={id}
               onClick={() => onChange(id)}
-              className="relative flex items-center gap-1.5 px-3 py-3 text-[13px] font-medium whitespace-nowrap transition-colors duration-200"
-              style={{ color: active ? "var(--text)" : "var(--text-muted)" }}
+              className={`relative flex items-center gap-1.5 px-3 py-3 text-[13px] font-medium whitespace-nowrap transition-colors duration-200 ${
+                isFirstUtility ? "ml-1 border-l pl-4 sm:ml-2" : ""
+              }`}
+              style={{
+                color: active ? "var(--text)" : "var(--text-muted)",
+                borderColor: isFirstUtility ? "var(--border-strong)" : undefined,
+              }}
             >
               <Icon size={14} />
               <span>{label}</span>

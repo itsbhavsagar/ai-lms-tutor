@@ -414,7 +414,7 @@ export default function NotesTab({ lesson }: NotesTabProps) {
                       }}
                     >
                       <p
-                        className="whitespace-pre-wrap break-words text-[13px] leading-relaxed"
+                        className="whitespace-pre-wrap wrap-wrap-wrap-break-word text-[13px] leading-relaxed"
                         style={{ color: "var(--text)" }}
                       >
                         {content || "Empty note"}

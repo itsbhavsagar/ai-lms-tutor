@@ -19,8 +19,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full">
-      <body className="h-dvh overflow-hidden antialiased">
+    <html lang="en" className="h-full" suppressHydrationWarning>
+      <body
+        className="h-dvh overflow-hidden antialiased"
+        suppressHydrationWarning
+      >
         <Providers>
           <div className="flex h-dvh w-full min-w-0">{children}</div>
         </Providers>

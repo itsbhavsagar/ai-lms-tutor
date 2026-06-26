@@ -1,235 +1,208 @@
 # AI LMS Tutor
 
-AI LMS Tutor is a Next.js learning app that combines lesson-based tutoring, AI summaries, quiz generation, note-taking, voice transcription, and retrieval-augmented chat in one interface.
+An **AI-first learning platform** for software engineers. Lessons are structured **metadata** (objectives, concepts, interview focus, production topics) — not long static textbooks. Groq and Cohere generate explanations, quizzes, personalized reviews, and mock interviews from that metadata at runtime.
 
-The project ships with a small set of built-in lessons and uses Groq for chat, quiz, summary, and transcription workflows, Cohere for embeddings, and Prisma with PostgreSQL for persistence.
+**Live demo:** [ai-lms-tutor.vercel.app](https://ai-lms-tutor.vercel.app)
 
-## Features
+---
 
-- Lesson-based study UI with a sidebar and tabbed workspace
-- **AI Chat** with suggested starter questions, streaming responses, chat history sidebar, copy/regenerate actions, and voice input
-- **AI-generated quizzes** with attempt tracking and score display after refresh
-- **AI-generated lesson summaries** (overview, key points, remember-this)
-- **Multi-note editor** per lesson — create, edit, and delete notes with auto-derived titles
-- **RAG chat** over pasted content or uploaded PDFs
-- **Live Chat** demo tab with lightweight streaming
-- TanStack Query caching so tab switches do not refetch unchanged lesson data
-- Toast notifications (top-right) for errors, success, and confirmations
-- Navigation persistence — active tab and selected lesson survive page refresh
-- Simple in-memory rate limiting for selected API routes
+## Learning flow
 
-## Tech Stack
+Each lesson follows a four-step workflow:
 
-- Next.js 16 with App Router
-- React 19
-- TypeScript
-- TanStack Query for server-state caching
-- Tailwind CSS v4
-- Sonner for toast notifications
-- Prisma ORM
-- PostgreSQL
-- Groq SDK
-- Cohere SDK
-- `pdf2json` for PDF text extraction
-
-## How It Works
-
-### Lessons (frontend-only)
-
-Lesson content is **not** loaded from the backend. All lessons are defined in [`app/data/lessons.ts`](app/data/lessons.ts):
-
-```ts
-type Lesson = {
-  id: string;      // e.g. "photosynthesis"
-  title: string;   // e.g. "🌱 Photosynthesis"
-  content: string; // lesson text sent to the AI
-};
+```
+Learn → Practice → Mock Interview → Review
 ```
 
-There is no `Lesson` database model and no `/api/lessons` route. When a tab needs lesson context, the frontend sends `lessonId`, `lessonTitle`, and `lessonContent` in the request body. The backend stores only the `lessonId` string on user-generated records (sessions, notes, quizzes, etc.).
+| Tab | What it does |
+|-----|--------------|
+| **Learn** | AI mentor with adaptive teaching — Socratic questions, production stories, smart off-topic bridges |
+| **Practice** | AI-generated quiz with concept checks, explanations, and interview takeaways |
+| **Mock Interview** | Streaming senior-interviewer session tailored to the lesson |
+| **Review** | Personalized mentor review: strengths, gaps, revision plan, production examples |
 
-Built-in lessons:
+Utility tabs: **Notes**, **RAG Chat** (upload PDFs for lesson-scoped retrieval), **Live Chat** (voice demo).
 
-| ID | Title |
-| --- | --- |
-| `photosynthesis` | 🌱 Photosynthesis |
-| `newton-laws` | ⚡ Newton's Laws |
-| `water-cycle` | 💧 Water Cycle |
-| `cell-biology` | 🔬 Cell Biology |
+---
 
-### User identity & persistence
+## Curriculum
 
-When a user opens the app, a browser-local `userId` (UUID) is created and reused through `localStorage`. That `userId` associates sessions, notes, summaries, quizzes, uploaded documents, and message history in PostgreSQL.
+Lessons live in `lib/curriculum/` and are re-exported from `app/data/lessons.ts`.
 
-Additional client-side persistence:
+**13 lessons** across **4 tracks:**
 
-| Key | Purpose |
-| --- | --- |
-| `userId` | Anonymous user identifier |
-| `lms-active-tab` | Last selected tab |
-| `lms-selected-lesson-id` | Last selected lesson |
-| Per-lesson chat session | Active chat session ID per lesson |
+| Track | Topics |
+|-------|--------|
+| AI Engineering | Prompt engineering, RAG, embeddings, AI agents |
+| Frontend | React fundamentals, Next.js App Router, TanStack Query, React performance |
+| Backend | REST API design, authentication, PostgreSQL |
+| System Design | System design fundamentals, observability |
 
-See [`lib/utils/appNavigation.ts`](lib/utils/appNavigation.ts) and [`lib/chat/sessionStorage.ts`](lib/chat/sessionStorage.ts).
+Each lesson includes:
 
-### Main workspace
+- `objectives`, `concepts`, `productionTopics`, `interviewFocus`
+- `prerequisites`, `tags`, `difficulty`, `estimatedMinutes`
 
-The study experience lives in [`app/page.tsx`](app/page.tsx). Users switch between these tabs:
+`lib/curriculum/knowledge-graph.ts` links lessons via concept chains and prerequisite edges. The learner profile uses this graph for cross-lesson weak/strong concept detection.
 
-| Tab | Description |
-| --- | --- |
-| **Chat** | Lesson Q&A with session history, suggested questions, streaming, and voice input |
-| **Quiz** | Generates 4 multiple-choice questions from the selected lesson |
-| **Summary** | Creates a structured lesson summary |
-| **Notes** | Multi-note editor with card grid, draft mode, and CRUD |
-| **RAG Chat** | Indexes pasted text or PDFs and answers from retrieved chunks |
-| **Live Chat** | Standalone demo streaming chat |
+### Adding or editing lessons
 
-Tabs are mounted conditionally (only the active tab renders). Server data is not lost on tab switch because it lives in a TanStack Query cache above the tab tree, keyed by `userId` and `lessonId`.
+Edit `lib/curriculum/lessons.ts` and add a matching node in `knowledge-graph.ts`. No API or UI changes required — the server resolves `lessonId` and injects metadata into prompts automatically.
 
-## Chat
+---
 
-[`app/components/ChatTab.tsx`](app/components/ChatTab.tsx) and [`app/components/chat/`](app/components/chat/) implement the chat experience:
+## AI prompts
 
-- **Empty state** with suggested questions ([`lib/chat/suggestions.ts`](lib/chat/suggestions.ts))
-- **Lazy session creation** — a DB session is created only when the first message is sent
-- **Chat history sidebar** — lists past conversations for the current lesson (shown once a chat has messages)
-- **Streaming** with thinking indicator and cursor
-- **Message actions** — copy and regenerate last assistant reply
-- **Auto-growing composer** with mic and send icons inside the input (ChatGPT-style)
-- **Voice input** via hold-to-record and Groq Whisper transcription
+Mode-specific system prompts in `lib/ai/prompts/`:
 
-Chat subcomponents: `ChatSidebar`, `ChatEmptyState`, `ChatMessageBubble`, `ChatThinkingIndicator`.
+| File | Role |
+|------|------|
+| `learn.ts` | AI mentor base prompt (Learn tab) |
+| `practice.ts` | Examiner (quiz generation) |
+| `review.ts` | Mentor (personalized review JSON) |
+| `mock-interview.ts` | Senior interviewer |
+| `lesson-context.ts` | Formats lesson metadata + quiz performance for prompts |
 
-## Notes
+Clients send `lessonId` + `userId`; the server loads lesson metadata and learner profile — not raw lesson content blobs.
 
-[`app/components/NotesTab.tsx`](app/components/NotesTab.tsx) provides a multi-note interface per lesson:
+---
 
-- Grid of note cards with color accents
-- Draft notes saved locally until the user clicks Save
-- Auto-derived titles from content ([`lib/notes/title.ts`](lib/notes/title.ts))
-- Edit and delete with toast confirmation
-- Full CRUD via `/api/notes` (`GET`, `POST`, `PATCH`, `DELETE`)
+## Mentor Personality Engine
 
-## State Management & Data Fetching
+The Learn tab is not a generic chatbot. Each turn, `lib/ai/mentor-engine.ts` builds a **turn plan** injected into the system prompt before calling Groq:
 
-The app separates **server state** from **UI state**:
+| Dimension | What it does |
+|-----------|--------------|
+| **4 modes** | Coach · Senior Engineer · Interviewer · Debugger — rotated by learner state |
+| **10 strategies** | Explain · Analogy · Scenario · MiniQuiz · Challenge · ProductionStory · DebugExercise · InterviewMode · ReverseQuestion · ThinkFirst |
+| **5 endings** | teach-only · story-end · socratic-question · challenge-wait · mini-quiz — not every reply ends with a question |
+| **55+ transitions** | Bridge openers deduped per session — avoids repetitive "Now imagine…" |
+| **Smart bridges** | Off-topic trivia gets a brief answer + 2–3 hop conceptual chain back to the lesson (e.g. Tom Cruise → Netflix → Server Components) |
+| **Session memory** | Callbacks to earlier topics in the thread ("Earlier we talked about Netflix…") |
+| **Humor gate** | At most one light joke ~every 17 turns — otherwise no emojis |
 
-| Layer | Responsibility | Examples |
-| --- | --- | --- |
-| TanStack Query | Fetched and mutated server data | quiz, notes, summary, chat sessions/messages, RAG index status |
-| Component `useState` | Ephemeral UI state | quiz selections, note drafts, streaming buffers, mic recording |
-| `localStorage` | Browser-persistent identifiers | `userId`, active tab, selected lesson, chat session per lesson |
+`lib/ai/mentor-context.ts` detects off-topic streaks and confusion signals. `lib/ai/chat.ts` passes prior user + assistant messages into the engine on every request.
 
-### Query cache
+---
 
-[`app/providers.tsx`](app/providers.tsx) wraps the app in a `QueryClientProvider`. Query keys are defined in [`lib/query/keys.ts`](lib/query/keys.ts) and scoped by `userId` + `lessonId` (or `sessionId` for chat messages).
+## Learner memory
 
-Default cache behavior ([`lib/query/config.ts`](lib/query/config.ts)):
+`lib/db/learner-profile.ts` aggregates activity across the app:
 
-- `staleTime`: 5 minutes — cached data is considered fresh; tab remounts do not trigger new requests
-- `gcTime`: 30 minutes — unused cache entries are garbage-collected after this period
-- Mutations invalidate or update the cache (e.g. generating a quiz refetches quiz data; saving notes writes directly to cache)
+- Quiz attempts and scores
+- Chat sessions and recent topics
+- Notes
+- Cross-lesson performance via the knowledge graph
 
-Feature hooks live under [`lib/hooks/queries/`](lib/hooks/queries/) (`useQuiz`, `useNotes`, `useSummary`, `useMessages`, `useSessions`, `useRag`, etc.).
+Produces `strongConcepts`, `weakConcepts`, quiz scores, note topics, chat topics, and interview status. Injected into all AI routes via `formatLearnerProfile()`.
 
-### API client layer
+- **`buildLearnerProfileSafe()`** — returns an empty profile if Neon/DB is unreachable so AI features still work without history
+- **`GET /api/learner-profile`** — exposes the profile for debugging and recruiter demo
 
-All frontend HTTP calls go through [`lib/api/client.ts`](lib/api/client.ts) (`apiGet`, `apiPost`, `apiStreamPost`, etc.) and domain modules in [`lib/api/`](lib/api/). Errors are normalized to user-friendly messages via [`lib/utils/errorMessage.ts`](lib/utils/errorMessage.ts) and surfaced as toasts through the global query/mutation error handlers in [`lib/query/query-client.ts`](lib/query/query-client.ts).
+---
 
-## Project Structure
+## Architecture
 
-```text
-ai-lms-tutor/
-├── app/
-│   ├── api/                 # Route handlers (chat, quiz, summary, notes, RAG, sessions, etc.)
-│   ├── components/
-│   │   ├── chat/            # Chat sidebar, bubbles, empty state, thinking indicator
-│   │   ├── notes/           # Note card component
-│   │   ├── learning/        # Shared learning UI helpers
-│   │   ├── ChatTab.tsx      # Main chat tab
-│   │   ├── NotesTab.tsx     # Multi-note editor
-│   │   ├── QuizTab.tsx
-│   │   ├── SummaryTab.tsx
-│   │   ├── RagTab.tsx
-│   │   ├── DemoTab.tsx
-│   │   ├── Tabs.tsx
-│   │   └── AppToaster.tsx
-│   ├── data/
-│   │   └── lessons.ts       # Built-in lesson content (frontend-only)
-│   ├── types/               # Shared frontend types
-│   ├── globals.css
-│   ├── layout.tsx
-│   ├── page.tsx             # Main application shell
-│   └── providers.tsx        # QueryClientProvider and global toasts
-├── lib/
-│   ├── ai/                  # Groq/Cohere helpers
-│   ├── api/                 # Typed frontend API client
-│   ├── chat/                # Session storage, suggestions, formatting
-│   ├── db/                  # Prisma client and session helpers
-│   ├── hooks/               # useUserId, useAppNavigation, query hooks
-│   ├── notes/               # Title derivation, drafts, card colors
-│   ├── middleware/          # Rate limiting
-│   ├── query/               # Query keys, cache config, QueryClient factory
-│   └── utils/               # Validation, storage, errors, toasts, PDF helpers
-├── prisma/
-│   ├── migrations/
-│   └── schema.prisma
-└── public/
+```
+Browser (Next.js App Router)
+  │
+  ├── Learn / Practice / Review / Interview tabs
+  │     └── POST /api/chat | /api/quiz | /api/summary | /api/interview
+  │           └── lessonId → curriculum + learner profile + mentor turn plan
+  │
+  ├── Notes, Sessions
+  │     └── /api/notes, /api/sessions, /api/messages
+  │
+  ├── RAG (per lesson)
+  │     └── upload-pdf → embed (Cohere) → rag-chat (retrieve + Groq)
+  │
+  └── Live Chat (voice demo, no DB)
+        └── transcribe (Groq Whisper) → demo-chat
+
+PostgreSQL (Neon) via Prisma
+  User, Session, Message, Note, Quiz, QuizAttempt, Summary, Document, Chunk
 ```
 
-## Database Models
+---
 
-The Prisma schema in [`prisma/schema.prisma`](prisma/schema.prisma) defines these main entities:
+## API routes
 
-- `User` — logical app user keyed by a generated browser ID
-- `Session` — a chat session for a lesson (`lessonId` string, optional title)
-- `Message` — chat history for a session
-- `Document` — uploaded or pasted RAG source material
-- `Chunk` — embedded text chunks tied to a document
-- `Note` — saved lesson notes with `title` and `content`
-- `Summary` — generated summary snapshots
-- `Quiz` — generated quiz payloads (JSON)
-- `QuizAttempt` — stored quiz scores
+| Route | Purpose |
+|-------|---------|
+| `POST /api/chat` | Learn-mode streaming chat |
+| `POST /api/quiz` | Generate practice questions |
+| `POST /api/quiz/submit` | Record attempt + score |
+| `POST /api/summary` | Personalized review JSON |
+| `POST /api/interview` | Mock interview streaming |
+| `GET /api/learner-profile` | Aggregated learner profile |
+| `GET/POST /api/sessions` | Chat session CRUD |
+| `GET/DELETE /api/sessions/[sessionId]` | Single session |
+| `GET/POST/PATCH/DELETE /api/notes` | Multi-note per lesson |
+| `POST /api/upload-pdf` | PDF upload for RAG |
+| `POST /api/embed` | Chunk + embed documents |
+| `POST /api/rag-chat` | RAG-grounded chat |
+| `POST /api/transcribe` | Voice → text (Live Chat) |
+| `POST /api/demo-chat` | Voice demo chat (no DB) |
 
-There is **no** `Lesson` table. Lesson content lives in the frontend.
+All AI routes accept `lessonId` (required) and optionally `userId` for personalization.
 
-## Environment Variables
+---
 
-Create a `.env` or `.env.local` file:
+## Tech stack
 
-```env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
-GROQ_API_KEY="your_groq_api_key"
-COHERE_API_KEY="your_cohere_api_key"
-```
+| Layer | Choice |
+|-------|--------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| AI (chat / quiz / review / interview) | Groq — `llama-3.1-8b-instant` |
+| Embeddings | Cohere — `embed-english-v3.0` |
+| Voice | Groq Whisper (`whisper-large-v3-turbo`) |
+| Database | PostgreSQL (Neon) |
+| ORM | Prisma |
+| Client state | TanStack Query |
+| Validation | Zod |
+| Toasts | react-hot-toast |
 
-## Getting Started
+---
 
-### 1. Install dependencies
+## Setup
+
+### Prerequisites
+
+- Node.js 18+
+- Accounts: [Groq](https://console.groq.com), [Cohere](https://dashboard.cohere.com), [Neon](https://neon.tech)
+
+### 1. Clone and install
 
 ```bash
+git clone https://github.com/bhavsagar/ai-lms-tutor.git
+cd ai-lms-tutor
 npm install
 ```
 
-### 2. Configure the database
+### 2. Environment variables
 
-Make sure PostgreSQL is running and `DATABASE_URL` points to it.
+Create `.env.local`:
 
-Generate the Prisma client and apply migrations:
-
-```bash
-npx prisma generate
-npx prisma migrate dev
+```env
+GROQ_API_KEY=gsk_...
+COHERE_API_KEY=...
+DATABASE_URL=postgresql://user:pass@host/db?sslmode=require
 ```
 
-For an existing database in production:
+### 3. Database
+
+Ensure your Neon project is **active** (paused databases cause connection failures). Then:
 
 ```bash
 npx prisma migrate deploy
+npx prisma generate
 ```
 
-### 3. Start the development server
+An anonymous `userId` is generated in `localStorage` on first visit and upserted to Postgres on the first API call that needs it.
+
+### 4. Run locally
 
 ```bash
 npm run dev
@@ -237,108 +210,63 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-## Available Scripts
+---
 
-- `npm run dev` — start the Next.js development server
-- `npm run build` — generate Prisma client and build the app
-- `npm run start` — run the production build
-- `npm run lint` — run ESLint
+## Project structure
 
-## Core API Routes
+```
+app/
+  api/              # Route handlers (chat, quiz, summary, interview, RAG, sessions, notes)
+  components/       # Tab UIs (ChatTab, QuizTab, SummaryTab, InterviewTab, Notes, Rag, Demo)
+  data/lessons.ts   # Re-exports from lib/curriculum
+  types/            # Quiz, summary/review, chat types
 
-Server routes live under [`app/api`](app/api).
+lib/
+  ai/
+    prompts/        # Mode-specific system prompts (learn, practice, review, interview)
+    mentor-engine.ts   # Turn plan: mode, strategy, ending, transitions, session memory
+    mentor-context.ts  # Off-topic detection, confusion signals
+  curriculum/       # Lesson metadata, tracks, knowledge graph
+  db/               # Prisma client, learner profile, quiz performance, sessions
+  chat/             # Message formatting, suggestions, session storage
+  learning/         # Workflow step definitions, legacy tab migration
+  hooks/            # useAppNavigation, useSessions, useRecruiterMode
+  utils/            # Navigation persistence, validation, rate limiting
 
-| Route | Method | Purpose |
-| --- | --- | --- |
-| `/api/sessions` | `GET`, `POST` | List or create chat sessions for a lesson |
-| `/api/sessions/[sessionId]` | `DELETE` | Delete a chat session and its messages |
-| `/api/messages` | `GET` | Paginated session message history |
-| `/api/chat` | `POST` | Lesson-aware streaming chat |
-| `/api/demo-chat` | `POST` | Lightweight demo streaming chat |
-| `/api/summary` | `GET`, `POST` | Load or generate lesson summaries |
-| `/api/quiz` | `GET`, `POST` | Load or generate quizzes |
-| `/api/quiz/submit` | `POST` | Save quiz attempt results |
-| `/api/notes` | `GET`, `POST`, `PATCH`, `DELETE` | List, create, update, or delete notes |
-| `/api/embed` | `POST` | Embed pasted text for RAG |
-| `/api/upload-pdf` | `POST` | Extract PDF text, chunk it, and store embeddings |
-| `/api/rag-chat` | `POST` | Retrieve similar chunks and answer using them |
-| `/api/transcribe` | `POST` | Convert recorded audio to text with Groq Whisper |
+prisma/
+  schema.prisma     # User, Session, Message, Note, Quiz, Summary, Document, Chunk
+```
 
-### What the backend receives vs returns for lessons
+---
 
-**Sent by the frontend (not stored as lesson records):**
+## Navigation
 
-- `lessonId`, `lessonTitle`, `lessonContent` — on chat, quiz, and summary requests
+Tab IDs persist in `localStorage`. Legacy IDs are migrated automatically:
 
-**Returned by the backend (scoped to `lessonId`):**
+| Old | New |
+|-----|-----|
+| `chat` | `learn` |
+| `quiz` | `practice` |
+| `summary` | `review` |
 
-- Chat sessions, messages, notes, summaries, quizzes, RAG documents/chunks
+See `lib/learning/journey.ts` and `lib/utils/appNavigation.ts`.
 
-## AI Integrations
+---
 
-### Groq
+## Recruiter demo mode
 
-Used for lesson chat, RAG response generation, quiz generation, summary generation, voice transcription, and demo streaming chat.
+A header toggle enables **Recruiter Demo** mode (`RecruiterDashboard.tsx`). It surfaces architecture notes, prompt locations, Prisma models, live learner profile JSON, and TanStack Query cache — useful for portfolio walkthroughs, not for learners.
 
-Models referenced in the code:
+---
 
-- `llama-3.1-8b-instant`
-- `whisper-large-v3-turbo`
+## Deployment (Vercel)
 
-### Cohere
+1. Push to GitHub and import the repo in [Vercel](https://vercel.com).
+2. Add `GROQ_API_KEY`, `COHERE_API_KEY`, and `DATABASE_URL` in project settings.
+3. Deploy. Run `npx prisma migrate deploy` against production Neon when schema changes.
 
-Used for document embeddings and query embeddings for semantic retrieval.
+---
 
-Model:
+## License
 
-- `embed-english-v3.0`
-
-## RAG Flow
-
-1. A user pastes lesson-related text or uploads a PDF.
-2. The content is chunked on the server.
-3. Cohere embeddings are generated for each chunk.
-4. Existing RAG documents for the same `userId` and `lessonId` are replaced.
-5. Chunks are stored in PostgreSQL through Prisma.
-6. During RAG chat, the latest question is embedded.
-7. Stored chunks are scored with cosine similarity.
-8. The top chunks are inserted into the system prompt for Groq.
-
-## Notes About User Identity
-
-This project does not implement full authentication. The frontend creates a UUID in browser storage and treats it as the user identifier. Data ownership is browser-specific unless a real auth layer is added later.
-
-## Known Limitations
-
-- Rate limiting is in-memory — resets on server restart and is not shared across instances.
-- RAG similarity search runs in application code after loading chunks from the database.
-- RAG index status is tracked in the client query cache (no GET endpoint); a full page reload resets the “indexed” UI until content is re-indexed.
-- In-progress quiz selections reset when switching tabs (attempt history is still cached).
-- Lesson content is hardcoded in the frontend — no CMS or admin lesson editor.
-- User identity is local-browser based, not authenticated.
-- PDF page count shown in the UI is estimated from chunk count, not true PDF pagination.
-
-## Useful Files
-
-| File | Purpose |
-| --- | --- |
-| [`app/page.tsx`](app/page.tsx) | Main UI shell, lesson sidebar, tab routing |
-| [`app/data/lessons.ts`](app/data/lessons.ts) | Built-in lesson definitions |
-| [`app/components/ChatTab.tsx`](app/components/ChatTab.tsx) | Chat tab with sessions, streaming, voice |
-| [`app/components/NotesTab.tsx`](app/components/NotesTab.tsx) | Multi-note editor |
-| [`lib/hooks/useAppNavigation.ts`](lib/hooks/useAppNavigation.ts) | Tab and lesson persistence |
-| [`lib/hooks/queries/`](lib/hooks/queries/) | TanStack Query hooks per feature |
-| [`lib/api/client.ts`](lib/api/client.ts) | Shared fetch helpers and error parsing |
-| [`lib/ai/chat.ts`](lib/ai/chat.ts) | Streaming chat and session persistence |
-| [`app/api/upload-pdf/route.ts`](app/api/upload-pdf/route.ts) | PDF ingestion pipeline |
-| [`app/api/rag-chat/route.ts`](app/api/rag-chat/route.ts) | Chunk retrieval and grounded answers |
-| [`prisma/schema.prisma`](prisma/schema.prisma) | Data model |
-
-## Future Improvements
-
-- Add real authentication and user accounts
-- Move vector search to a dedicated vector database or PostgreSQL extension
-- Add a backend `Lesson` model and admin interface for lesson management
-- Add tests for API routes and core utility functions
-- Improve observability and structured error reporting
-- Add deployment instructions for Vercel or Docker
+MIT

@@ -1,5 +1,12 @@
 import { Groq } from "groq-sdk";
 import { Message } from "@prisma/client";
+import {
+  buildMentorTurnPlan,
+  formatMentorTurnPlan,
+} from "@/lib/ai/mentor-engine";
+import { buildLearnSystemPrompt } from "@/lib/ai/prompts/learn";
+import type { LearnerProfile } from "@/lib/db/learner-profile";
+import type { Lesson } from "@/lib/curriculum/types";
 import { prisma } from "@/lib/db/prisma";
 import { estimateTokenCount } from "@/lib/utils/text";
 
@@ -38,23 +45,22 @@ function selectMemoryMessages(
   return selected;
 }
 
-function buildSystemPrompt(lessonMaterial: string, useRag: boolean): string {
-  return `You are a strict tutor for a specific lesson.
-
-Rules:
-- Answer ONLY questions related to the lesson material
-- If the question is unrelated, respond with: "This question is outside the lesson scope."
-- Do NOT answer general knowledge questions
-- Do NOT guess or provide information outside the lesson
-- Keep answers short and easy to scan
-
-Lesson Material:
-${lessonMaterial}
-
-Formatting:
-- Use bullet points or short lines when possible
-- Each point must be on a new line
-- Avoid long paragraphs`;
+function buildSystemPrompt(
+  lesson: Lesson,
+  profile: LearnerProfile,
+  priorUserMessages: string[],
+  priorAssistantMessages: string[],
+  userMessage: string,
+): string {
+  const turnPlan = buildMentorTurnPlan(
+    priorUserMessages,
+    priorAssistantMessages,
+    userMessage,
+    lesson,
+    profile,
+  );
+  const turnPlanBlock = formatMentorTurnPlan(turnPlan, lesson);
+  return buildLearnSystemPrompt(lesson, profile, turnPlanBlock);
 }
 
 function buildMessages(
@@ -86,7 +92,8 @@ function estimateChatTokens(messages: any[]): number {
 export async function chatWithContext(
   sessionId: string,
   userMessage: string,
-  lessonMaterial: string,
+  lesson: Lesson,
+  profile: LearnerProfile,
   config: ChatConfig = {},
 ) {
   const session = await prisma.session.findUnique({
@@ -103,17 +110,24 @@ export async function chatWithContext(
     maxTokens: config.maxContextTokens,
   });
 
-  const systemPrompt = buildSystemPrompt(
-    lessonMaterial,
-    config.useRag || false,
-  );
-  const messages = buildMessages(systemPrompt, contextMessages, userMessage);
+  const priorUserMessages = session.messages
+    .filter((m) => m.role === "user")
+    .map((m) => m.content);
 
-  const completion = await groq.chat.completions.create({
-    model: "llama-3.1-8b-instant",
-    stream: true,
-    messages,
-  });
+  const priorAssistantMessages = session.messages
+    .filter((m) => m.role === "assistant")
+    .map((m) => m.content);
+
+  const systemPrompt =
+    config.customSystemPrompt ??
+    buildSystemPrompt(
+      lesson,
+      profile,
+      priorUserMessages,
+      priorAssistantMessages,
+      userMessage,
+    );
+  const groqMessages = buildMessages(systemPrompt, contextMessages, userMessage);
 
   await prisma.message.create({
     data: {
@@ -135,6 +149,12 @@ export async function chatWithContext(
       const encoder = new TextEncoder();
 
       try {
+        const completion = await groq.chat.completions.create({
+          model: "llama-3.1-8b-instant",
+          stream: true,
+          messages: groqMessages,
+        });
+
         for await (const chunk of completion) {
           const text = chunk.choices?.[0]?.delta?.content || "";
           if (text) {
@@ -142,6 +162,7 @@ export async function chatWithContext(
             controller.enqueue(encoder.encode(text));
           }
         }
+
         controller.close();
 
         await prisma.message.create({
@@ -166,7 +187,7 @@ export async function chatWithContext(
   return {
     stream,
     onFinish: async () => {
-      // Already saved in stream
+      // Saved when the stream completes.
     },
   };
 }

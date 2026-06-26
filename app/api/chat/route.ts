@@ -1,4 +1,9 @@
+import { getLessonById } from "@/lib/curriculum";
 import { chatWithContext } from "@/lib/ai/chat";
+import {
+  buildLearnerProfileSafe,
+  emptyLearnerProfile,
+} from "@/lib/db/learner-profile";
 import { validateChatRequest } from "@/lib/utils/validation";
 import { jsonApiError } from "@/lib/utils/apiError";
 import {
@@ -32,21 +37,31 @@ export async function POST(req: Request) {
     const { message: userMessage, sessionId } =
       validateChatRequest(normalizedBody);
 
-    const lessonContent = (body as any).lessonContent || "";
-    const useRag = (body as any).useRag !== false;
+    const lessonId = body.lessonId as string | undefined;
+    const userId = body.userId as string | undefined;
+
+    if (!lessonId) {
+      return Response.json({ error: "lessonId is required" }, { status: 400 });
+    }
+
+    const lesson = getLessonById(lessonId);
+    if (!lesson) {
+      return Response.json({ error: "Lesson not found" }, { status: 404 });
+    }
+
+    const profile = userId
+      ? await buildLearnerProfileSafe(userId, lessonId)
+      : emptyLearnerProfile();
 
     try {
       const chatResponse = await chatWithContext(
         sessionId,
         userMessage,
-        lessonContent,
-        {
-          useRag,
-        },
+        lesson,
+        profile,
       );
 
       const encoder = new TextEncoder();
-      let fullResponse = "";
 
       const readable = new ReadableStream({
         async start(controller) {
@@ -58,12 +73,10 @@ export async function POST(req: Request) {
               if (done) break;
 
               const text = new TextDecoder().decode(value);
-              fullResponse += text;
               controller.enqueue(encoder.encode(text));
             }
 
             controller.close();
-
             await chatResponse.onFinish();
           } catch (error) {
             console.error("Streaming error:", error);

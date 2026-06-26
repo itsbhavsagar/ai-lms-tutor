@@ -108,11 +108,11 @@ export default function MessageContent({ content }: MessageContentProps) {
   const blocks = parseBlocks(content);
 
   return (
-    <div className="min-w-0 space-y-2 break-words">
+    <div className="min-w-0 space-y-2 wrap-wrap-wrap-break-word">
       {blocks.map((block, index) => {
         if (block.type === "paragraph") {
           return (
-            <p key={index} className="whitespace-pre-wrap break-words">
+            <p key={index} className="whitespace-pre-wrap wrap-wrap-wrap-break-word">
               {block.lines.map((line, lineIndex) => (
                 <Fragment key={lineIndex}>
                   {lineIndex > 0 && <br />}
@@ -126,8 +126,8 @@ export default function MessageContent({ content }: MessageContentProps) {
         const ListTag = block.type === "ordered-list" ? "ol" : "ul";
         const listClassName =
           block.type === "ordered-list"
-            ? "ml-5 list-decimal space-y-1 break-words"
-            : "ml-5 list-disc space-y-1 break-words";
+            ? "ml-5 list-decimal space-y-1 wrap-wrap-break-word"
+            : "ml-5 list-disc space-y-1 wrap-wrap-break-word";
 
         return (
           <ListTag key={index} className={listClassName}>

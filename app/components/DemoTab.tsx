@@ -62,7 +62,7 @@ const DemoTab = (): JSX.Element => {
           style={{ background: "var(--accent-soft)", color: "var(--accent)" }}
         >
           <RiPlayCircleLine size={12} className="shrink-0" />
-          <span className="min-w-0 break-words">{BADGE_TEXT}</span>
+          <span className="min-w-0 wrap-wrap-wrap-break-word">{BADGE_TEXT}</span>
         </span>
       </div>
 
@@ -106,7 +106,7 @@ const DemoTab = (): JSX.Element => {
                 </div>
               )}
               <div
-                className="min-w-0 max-w-[88%] break-words rounded-2xl px-3 py-2.5 text-[13px] leading-relaxed sm:max-w-[78%] sm:px-4 lg:max-w-[72%]"
+                className="min-w-0 max-w-[88%] wrap-wrap-wrap-break-word rounded-2xl px-3 py-2.5 text-[13px] leading-relaxed sm:max-w-[78%] sm:px-4 lg:max-w-[72%]"
                 style={
                   msg.role === "user"
                     ? {
@@ -131,7 +131,7 @@ const DemoTab = (): JSX.Element => {
                 ) : msg.role === "assistant" ? (
                   <MessageContent content={msg.content} />
                 ) : (
-                  <span className="whitespace-pre-wrap break-words">
+                  <span className="whitespace-pre-wrap wrap-wrap-wrap-break-word">
                     {msg.content}
                   </span>
                 )}

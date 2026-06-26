@@ -28,7 +28,8 @@ const LABEL_SUBMIT = "Submit Quiz";
 const LABEL_QUESTIONS = "Questions";
 const LABEL_ANSWERED = "answered";
 const LABEL_CORRECT = "correct";
-const LABEL_EMPTY = "Generate a quiz to test your knowledge";
+const LABEL_EMPTY = "AI generates practice questions from your learner profile";
+const LABEL_HEADING = "Practice";
 const FEEDBACK_PERFECT = "Perfect score!";
 const FEEDBACK_GOOD = "Good job! Review the ones you missed.";
 const FEEDBACK_LOW = "Study more and try again.";
@@ -68,7 +69,7 @@ function buildQuizViewModel(data: QuizGetResponse | undefined): QuizViewModel | 
 
 export default function QuizTab({ lesson }: { lesson: Lesson }) {
   const { data, isLoading } = useQuizQuery(lesson.id);
-  const generateMutation = useGenerateQuizMutation(lesson);
+  const generateMutation = useGenerateQuizMutation(lesson.id);
   const submitMutation = useSubmitQuizMutation(lesson.id);
 
   const [selected, setSelected] = useState<Record<number, number>>({});
@@ -134,6 +135,11 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
   function handleSubmitQuiz() {
     if (!quizData) return;
 
+    const weakConcepts = quizData.questions
+      .filter((q, i) => selected[i] !== undefined && selected[i] !== q.correct)
+      .map((q) => q.checksConcept ?? q.question.slice(0, 60))
+      .filter(Boolean);
+
     const nextScore = quizData.questions.filter(
       (q, i) => selected[i] === q.correct,
     ).length;
@@ -143,6 +149,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
         quizId: quizData.id,
         score: nextScore,
         total: quizData.questions.length,
+        weakConcepts,
       },
       {
         onSuccess: () => {
@@ -173,7 +180,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
               ? LABEL_GENERATING
               : questions.length > 0
                 ? `${questions.length} ${LABEL_QUESTIONS}`
-                : "Quiz"}
+                : LABEL_HEADING}
           </h2>
           {!generating && questions.length > 0 && !submitted && (
             <p className={panelSubtextClass} style={{ color: "var(--text-muted)" }}>
@@ -313,10 +320,33 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
                   >
                     {qIndex + 1}
                   </span>
-                  <span className="min-w-0 flex-1 break-words">
+                  <span className="min-w-0 flex-1 wrap-break-word">
                     {q.question}
                   </span>
+                  {q.difficulty && (
+                    <span
+                      className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium uppercase"
+                      style={{
+                        background: "var(--accent-soft)",
+                        color: "var(--accent)",
+                      }}
+                    >
+                      {q.difficulty}
+                    </span>
+                  )}
                 </p>
+
+                {q.checksConcept && (
+                  <p
+                    className="text-[11px] leading-snug"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Checks your understanding of{" "}
+                    <span className="font-medium" style={{ color: "var(--accent)" }}>
+                      {q.checksConcept}
+                    </span>
+                  </p>
+                )}
 
                 <div className="flex flex-col gap-2">
                   {q.options.map((option, oIndex) => {
@@ -364,7 +394,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
                           cursor: submitted ? "default" : "pointer",
                         }}
                       >
-                        <span className="min-w-0 flex-1 break-words">
+                        <span className="min-w-0 flex-1 wrap-wrap-wrap-break-word">
                           {option}
                         </span>
                         {Icon && <span className="mt-0.5 shrink-0">{Icon}</span>}
@@ -372,6 +402,40 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
                     );
                   })}
                 </div>
+
+                {submitted && q.explanation && (
+                  <div
+                    className="flex flex-col gap-2 rounded-lg border p-3"
+                    style={{
+                      background: "var(--surface-raised)",
+                      borderColor: "var(--border)",
+                    }}
+                  >
+                    <p
+                      className="text-[11px] font-semibold uppercase tracking-wide"
+                      style={{ color: "var(--green)" }}
+                    >
+                      Explanation
+                    </p>
+                    <p
+                      className="text-[12px] leading-relaxed"
+                      style={{ color: "var(--text)" }}
+                    >
+                      {q.explanation}
+                    </p>
+                    {q.interviewTakeaway && (
+                      <p
+                        className="text-[12px] leading-relaxed"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        <span className="font-semibold" style={{ color: "var(--accent)" }}>
+                          Interview takeaway:{" "}
+                        </span>
+                        {q.interviewTakeaway}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
 

@@ -32,7 +32,7 @@ export function useAppNavigation() {
   const activeTab = useSyncExternalStore(
     subscribeTab,
     readPersistedTab,
-    (): TabType => "chat",
+    (): TabType => "learn",
   );
 
   const selectedLessonId = useSyncExternalStore(

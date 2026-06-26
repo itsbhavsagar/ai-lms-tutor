@@ -29,7 +29,10 @@ import {
 } from "@/lib/chat/sessionStorage";
 import { queryKeys } from "@/lib/query/keys";
 import ChatEmptyState from "./chat/ChatEmptyState";
-import ChatSidebar, { confirmDeleteSession } from "./chat/ChatSidebar";
+import ChatSidebar, {
+  confirmDeleteSession,
+  dismissDeleteSessionToast,
+} from "./chat/ChatSidebar";
 import ChatMessageBubble from "./chat/ChatMessageBubble";
 import LoadingIndicator from "./ui/LoadingIndicator";
 import { SkeletonChatHistory } from "./ui/Skeleton";
@@ -221,6 +224,15 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
 
   const performDeleteSession = useCallback(
     (targetSessionId: string) => {
+      if (
+        deleteSessionMutation.isPending &&
+        deleteSessionMutation.variables === targetSessionId
+      ) {
+        return;
+      }
+
+      dismissDeleteSessionToast(targetSessionId);
+
       deleteSessionMutation.mutate(targetSessionId, {
         onSuccess: () => {
           showSuccess("Chat deleted");
@@ -238,15 +250,18 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
 
   const handleDeleteSession = useCallback(
     (targetSessionId: string) => {
+      if (deleteSessionMutation.isPending) return;
+
       const target = savedSessions.find(
         (session) => session.id === targetSessionId,
       );
       confirmDeleteSession(
+        targetSessionId,
         sessionPreviewText(target?.preview ?? null, "this chat"),
         () => performDeleteSession(targetSessionId),
       );
     },
-    [savedSessions, performDeleteSession],
+    [savedSessions, performDeleteSession, deleteSessionMutation.isPending],
   );
 
   const loadMoreMessages = useCallback(async () => {
@@ -371,11 +386,14 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     userText: string,
     history: ChatMessage[],
     currentSessionId: string,
+    options?: { skipSetup?: boolean },
   ) {
-    setLoading(true);
-    setStreamPhase("thinking");
-    setShouldAutoScroll(true);
-    setMessages([...history, { role: "assistant", content: "" }]);
+    if (!options?.skipSetup) {
+      setLoading(true);
+      setStreamPhase("thinking");
+      setShouldAutoScroll(true);
+      setMessages([...history, { role: "assistant", content: "" }]);
+    }
 
     let finalMessages = [
       ...history,
@@ -386,7 +404,6 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
       await streamLessonChatWithRetry({
         sessionId: currentSessionId,
         messages: history,
-        lessonContent: lesson.content,
         lessonId: lesson.id,
         lessonTitle: lesson.title,
         userId: userId!,
@@ -437,21 +454,36 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     const text = (textOverride ?? input).trim();
     if (!text || loading || !userId) return;
 
-    let currentSessionId: string | null;
+    const userMsg: ChatMessage = { role: "user", content: text };
+    const history = [...messages, userMsg];
+    setInput("");
+
+    // Show user message + thinking state immediately — don't wait for session/API.
+    setLoading(true);
+    setStreamPhase("thinking");
+    setShouldAutoScroll(true);
+    setMessages([...history, { role: "assistant", content: "" }]);
+
+    let currentSessionId = sessionId;
     try {
-      currentSessionId = await ensureSession();
+      if (!currentSessionId) {
+        currentSessionId = await ensureSession();
+      }
     } catch {
+      setLoading(false);
+      setStreamPhase("idle");
+      setMessages(history);
       return;
     }
 
-    if (!currentSessionId) return;
+    if (!currentSessionId) {
+      setLoading(false);
+      setStreamPhase("idle");
+      setMessages(history);
+      return;
+    }
 
-    const userMsg: ChatMessage = { role: "user", content: text };
-    const history = [...messages, userMsg];
-    setMessages(history);
-    setInput("");
-
-    await runChat(text, history, currentSessionId);
+    await runChat(text, history, currentSessionId, { skipSetup: true });
   }
 
   async function handleRegenerate() {

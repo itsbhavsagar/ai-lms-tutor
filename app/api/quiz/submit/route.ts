@@ -3,7 +3,7 @@ import { jsonApiError } from "@/lib/utils/apiError";
 
 export async function POST(req: Request) {
   try {
-    const { quizId, score, total } = await req.json();
+    const { quizId, score, total, weakConcepts } = await req.json();
 
     if (!quizId || score === undefined || !total) {
       return Response.json(
@@ -12,17 +12,19 @@ export async function POST(req: Request) {
       );
     }
 
+    const concepts =
+      Array.isArray(weakConcepts)
+        ? weakConcepts.filter((c: unknown) => typeof c === "string")
+        : [];
+
     const attempt = await prisma.quizAttempt.create({
       data: {
         quizId,
         score,
         total,
+        weakConcepts: concepts,
       },
     });
-
-    console.log(
-      `[Quiz] Attempt recorded: ${attempt.id} - Score: ${score}/${total}`,
-    );
 
     return Response.json({ attempt });
   } catch (error) {

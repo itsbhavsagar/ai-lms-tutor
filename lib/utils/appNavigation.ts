@@ -1,12 +1,14 @@
 import type { TabType } from "@/app/components/Tabs";
+import { migrateTabId } from "@/lib/learning/journey";
 
 const TAB_KEY = "lms-active-tab";
 const LESSON_KEY = "lms-selected-lesson-id";
 
 const VALID_TABS = new Set<TabType>([
-  "chat",
-  "quiz",
-  "summary",
+  "learn",
+  "practice",
+  "review",
+  "interview",
   "notes",
   "rag",
   "live-chat",
@@ -32,11 +34,14 @@ export function subscribeLesson(listener: Listener): () => void {
 }
 
 export function readPersistedTab(): TabType {
-  if (typeof window === "undefined") return "chat";
+  if (typeof window === "undefined") return "learn";
   const saved = localStorage.getItem(TAB_KEY);
-  return saved && VALID_TABS.has(saved as TabType)
-    ? (saved as TabType)
-    : "chat";
+  if (!saved) return "learn";
+
+  const migrated = migrateTabId(saved);
+  if (migrated && VALID_TABS.has(migrated)) return migrated;
+
+  return "learn";
 }
 
 export function persistTab(tab: TabType): void {

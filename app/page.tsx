@@ -6,12 +6,13 @@ import QuizTab from "./components/QuizTab";
 import SummaryTab from "./components/SummaryTab";
 import NotesTab from "./components/NotesTab";
 import RagTab from "./components/RagTab";
+import InterviewTab from "./components/InterviewTab";
 import DemoTab from "./components/DemoTab";
+import RecruiterDashboard from "./components/RecruiterDashboard";
 import { RiGraduationCapLine } from "react-icons/ri";
 import { useAppNavigation } from "@/lib/hooks/useAppNavigation";
+import { useRecruiterMode } from "@/lib/hooks/useRecruiterMode";
 
-const TAB_SUBTITLE =
-  "AI-powered learning — ask questions, take quizzes, and review summaries.";
 const BRAND_NAME = "AI LMS Tutor";
 const BRAND_STACK = "Groq · Cohere · RAG";
 const LESSONS_LABEL = "Lessons";
@@ -26,6 +27,7 @@ export default function Home() {
     handleTabChange,
     isClientReady,
   } = useAppNavigation();
+  const { enabled: recruiterMode, toggle: toggleRecruiterMode } = useRecruiterMode();
 
   return (
     <div className="flex h-full w-full min-w-0 flex-col overflow-hidden md:flex-row">
@@ -113,31 +115,54 @@ export default function Home() {
           className="flex flex-none flex-col border-b px-4 pt-4 sm:px-6 md:px-8 md:pt-6"
           style={{ borderColor: "var(--border)" }}
         >
-          <div className="mb-4 min-w-0">
-            <h1
-              className="mb-0.5 truncate text-xl font-semibold leading-tight tracking-tight sm:text-[22px]"
-              style={{ fontFamily: "'Lora', serif", color: "var(--text)" }}
+          <div className="mb-2 flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h1
+                className="truncate text-xl font-semibold leading-tight tracking-tight sm:text-[22px]"
+                style={{ fontFamily: "'Lora', serif", color: "var(--text)" }}
+              >
+                {recruiterMode ? "Recruiter Demo" : selectedLesson.title}
+              </h1>
+              <p
+                className="mt-1 max-w-3xl text-[12px] leading-relaxed sm:text-[13px]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {recruiterMode
+                  ? "Engineering overview — prompts, streaming, TanStack Query cache, Prisma models."
+                  : selectedLesson.description}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={toggleRecruiterMode}
+              className="shrink-0 rounded-lg border px-3 py-1.5 text-[11px] font-semibold"
+              style={{
+                borderColor: recruiterMode
+                  ? "var(--accent)"
+                  : "var(--border-strong)",
+                background: recruiterMode
+                  ? "var(--accent-soft)"
+                  : "var(--surface-raised)",
+                color: recruiterMode ? "var(--accent)" : "var(--text-muted)",
+              }}
             >
-              {selectedLesson.title}
-            </h1>
-            <p
-              className="max-w-3xl text-[12px] leading-relaxed sm:text-[13px]"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {TAB_SUBTITLE}
-            </p>
+              {recruiterMode ? "Exit demo" : "Recruiter demo"}
+            </button>
           </div>
-          <Tabs
-            activeTab={activeTab}
-            onChange={handleTabChange}
-            showActiveIndicator={isClientReady}
-          />
+
+          {!recruiterMode && (
+            <Tabs
+              activeTab={activeTab}
+              onChange={handleTabChange}
+              showActiveIndicator={isClientReady}
+            />
+          )}
         </div>
 
         <div className="min-h-0 flex-1 overflow-hidden p-3 sm:p-4 md:p-6">
           <div
             className={`flex h-full min-h-0 flex-col rounded-lg ${
-              activeTab === "chat"
+              !recruiterMode && activeTab === "learn"
                 ? "overflow-hidden p-0"
                 : "p-3 sm:rounded-xl sm:p-4 md:p-6"
             }`}
@@ -147,12 +172,21 @@ export default function Home() {
               boxShadow: "var(--shadow-sm)",
             }}
           >
-            {activeTab === "chat" && <ChatTab lesson={selectedLesson} />}
-            {activeTab === "quiz" && <QuizTab lesson={selectedLesson} />}
-            {activeTab === "summary" && <SummaryTab lesson={selectedLesson} />}
-            {activeTab === "notes" && <NotesTab lesson={selectedLesson} />}
-            {activeTab === "rag" && <RagTab lesson={selectedLesson} />}
-            {activeTab === "live-chat" && <DemoTab />}
+            {recruiterMode ? (
+              <RecruiterDashboard lessonId={selectedLesson.id} />
+            ) : (
+              <>
+                {activeTab === "learn" && <ChatTab lesson={selectedLesson} />}
+                {activeTab === "practice" && <QuizTab lesson={selectedLesson} />}
+                {activeTab === "review" && <SummaryTab lesson={selectedLesson} />}
+                {activeTab === "interview" && (
+                  <InterviewTab lesson={selectedLesson} />
+                )}
+                {activeTab === "notes" && <NotesTab lesson={selectedLesson} />}
+                {activeTab === "rag" && <RagTab lesson={selectedLesson} />}
+                {activeTab === "live-chat" && <DemoTab />}
+              </>
+            )}
           </div>
         </div>
       </main>

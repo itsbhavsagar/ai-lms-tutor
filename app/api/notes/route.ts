@@ -58,7 +58,6 @@ export async function POST(req: Request) {
       },
     });
 
-    console.log(`[Notes] Created note: ${note.id}`);
     return Response.json({ note });
   } catch (error) {
     console.error("[Notes] POST error:", error);
@@ -86,7 +85,6 @@ export async function PATCH(req: Request) {
       },
     });
 
-    console.log(`[Notes] Updated note: ${note.id}`);
     return Response.json({ note });
   } catch (error) {
     console.error("[Notes] PATCH error:", error);
@@ -105,7 +103,6 @@ export async function DELETE(req: Request) {
 
     await prisma.note.delete({ where: { id: noteId } });
 
-    console.log(`[Notes] Deleted note: ${noteId}`);
     return Response.json({ success: true });
   } catch (error) {
     console.error("[Notes] DELETE error:", error);

@@ -14,27 +14,24 @@ export function useSummaryQuery(lessonId: string) {
   });
 }
 
-export function useGenerateSummaryMutation(lesson: {
-  id: string;
-  title: string;
-  content: string;
-}) {
+export function useGenerateSummaryMutation(lessonId: string) {
   const userId = useUserId();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: () =>
       generateSummary({
-        lessonContent: lesson.content,
-        lessonTitle: lesson.title,
         userId: userId!,
-        lessonId: lesson.id,
+        lessonId,
       }),
     meta: { errorMessage: "Failed to generate summary" },
     onSuccess: (summary) => {
       if (!userId) return;
-      queryClient.setQueryData(queryKeys.summary(userId, lesson.id), {
+      queryClient.setQueryData(queryKeys.summary(userId, lessonId), {
         summary,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.learnerProfile(userId, lessonId),
       });
     },
   });

@@ -32,7 +32,6 @@ export async function POST(req: Request) {
     if (!userId) return Response.json({ error: "No userId" }, { status: 400 });
 
     const chunks = chunkText(text);
-    console.log(`[RAG] Processing ${chunks.length} chunks from pasted text`);
 
     const response = await cohere.embed({
       texts: chunks,
@@ -60,8 +59,6 @@ export async function POST(req: Request) {
       },
     });
 
-    console.log(`[RAG] Document created: ${document.id}`);
-
     await prisma.chunk.createMany({
       data: chunks.map((text, i) => ({
         documentId: document.id,
@@ -69,10 +66,6 @@ export async function POST(req: Request) {
         embedding: embeddings[i],
       })),
     });
-
-    console.log(
-      `[RAG] Created ${chunks.length} chunks for document ${document.id}`,
-    );
 
     return Response.json({
       success: true,

@@ -1,12 +1,29 @@
 import Groq from "groq-sdk";
+import { parseJsonFromModel } from "@/lib/ai/parse-json";
+import {
+  buildReviewSystemPrompt,
+  buildReviewUserPrompt,
+} from "@/lib/ai/prompts/review";
+import { getLessonById } from "@/lib/curriculum";
+import { buildLearnerProfileSafe } from "@/lib/db/learner-profile";
 import { prisma } from "@/lib/db/prisma";
 import { jsonApiError } from "@/lib/utils/apiError";
 
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
+const EMPTY_REVIEW = {
+  understood: [],
+  struggled: [],
+  suggestedRevision: "",
+  revisionMinutes: 5,
+  commonInterviewMistake: "",
+  productionExample: "",
+  mentorNote: "",
+};
+
 export async function POST(req: Request) {
   try {
-    const { lessonContent, lessonTitle, userId, lessonId } = await req.json();
+    const { userId, lessonId } = await req.json();
 
     if (!userId || !lessonId) {
       return Response.json(
@@ -15,30 +32,23 @@ export async function POST(req: Request) {
       );
     }
 
+    const lesson = getLessonById(lessonId);
+    if (!lesson) {
+      return Response.json({ error: "Lesson not found" }, { status: 404 });
+    }
+
+    const profile = await buildLearnerProfileSafe(userId, lessonId);
+
     const response = await client.chat.completions.create({
       model: "llama-3.1-8b-instant",
       messages: [
-        {
-          role: "system",
-          content: `You are an expert educator. Return ONLY valid JSON. No markdown, no backticks.
-        
-        Format:
-        {
-          "overview": "2-3 sentence overview of the lesson",
-          "keyPoints": ["point 1", "point 2", "point 3", "point 4"],
-          "remember": "The single most important thing to remember"
-        }`,
-        },
-        {
-          role: "user",
-          content: `Summarize this lesson about ${lessonTitle}:\n\n${lessonContent}`,
-        },
+        { role: "system", content: buildReviewSystemPrompt(profile) },
+        { role: "user", content: buildReviewUserPrompt(lesson, profile) },
       ],
     });
 
     const raw = response.choices[0].message.content || "{}";
-    const cleaned = raw.replace(/```json|```/g, "").trim();
-    const summaryData = JSON.parse(cleaned);
+    const reviewData = parseJsonFromModel(raw, EMPTY_REVIEW);
 
     await prisma.user.upsert({
       where: { id: userId },
@@ -50,13 +60,11 @@ export async function POST(req: Request) {
       data: {
         userId,
         lessonId,
-        summaryText: JSON.stringify(summaryData),
+        summaryText: JSON.stringify(reviewData),
       },
     });
 
-    console.log(`[Summary] Created summary: ${summary.id}`);
-
-    return Response.json(summaryData);
+    return Response.json(reviewData);
   } catch (error) {
     console.error("[Summary] POST error:", error);
     return jsonApiError(error, "Failed to generate summary");

@@ -61,6 +61,15 @@ export async function getUserSessions(userId: string, lessonId?: string) {
 }
 
 export async function deleteSession(sessionId: string) {
+  const existing = await prisma.session.findUnique({
+    where: { id: sessionId },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    return null;
+  }
+
   await prisma.message.deleteMany({ where: { sessionId } });
   return prisma.session.delete({
     where: { id: sessionId },

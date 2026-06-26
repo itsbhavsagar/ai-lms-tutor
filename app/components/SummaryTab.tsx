@@ -9,139 +9,166 @@ import {
   useGenerateSummaryMutation,
   useSummaryQuery,
 } from "@/lib/hooks/queries/useSummary";
+import {
+  isPersonalizedReview,
+  type PersonalizedReview,
+} from "@/app/types/summary";
 import EmptyState from "./ui/EmptyState";
 import PrimaryButton from "./ui/PrimaryButton";
 import { SkeletonSummary } from "./ui/Skeleton";
 import { cardClass, panelHeadingClass } from "@/lib/ui/styles";
 
-const LABEL_GENERATE = "Generate Summary";
+const LABEL_GENERATE = "Generate Review";
 const LABEL_REGENERATE = "Regenerate";
 const LABEL_GENERATING = "Generating…";
-const LABEL_OVERVIEW = "Overview";
-const LABEL_KEY_POINTS = "Key Points";
-const LABEL_IMPORTANT = "Most Important";
-const LABEL_EMPTY = "Generate a summary to review key concepts";
-const LABEL_HEADING = "AI Summary";
+const LABEL_EMPTY =
+  "AI builds a personalized review from your quiz gaps and learner profile";
+const LABEL_HEADING = "Your Review";
+
+function PersonalizedReviewView({ review }: { review: PersonalizedReview }) {
+  return (
+    <div className="flex flex-col gap-4 pb-2">
+      {review.mentorNote && (
+        <div
+          className="rounded-xl border p-4"
+          style={{
+            background: "var(--accent-soft)",
+            borderColor: "var(--accent-border)",
+          }}
+        >
+          <p className="text-[13px] leading-relaxed" style={{ color: "var(--text)" }}>
+            {review.mentorNote}
+          </p>
+        </div>
+      )}
+
+      <div className={`${cardClass} flex flex-col gap-3`}>
+        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--green)" }}>
+          You understood
+        </p>
+        <ul className="space-y-1.5">
+          {review.understood.map((item, i) => (
+            <li key={i} className="flex items-start gap-2 text-[13px]" style={{ color: "var(--text)" }}>
+              <span style={{ color: "var(--green)" }}>✓</span>
+              {item}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {review.struggled.length > 0 && (
+        <div className={`${cardClass} flex flex-col gap-3`}>
+          <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--red)" }}>
+            You struggled with
+          </p>
+          <ul className="space-y-1.5">
+            {review.struggled.map((item, i) => (
+              <li key={i} className="flex items-start gap-2 text-[13px]" style={{ color: "var(--text)" }}>
+                <span style={{ color: "var(--red)" }}>✗</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {review.suggestedRevision && (
+        <div className={`${cardClass} flex flex-col gap-2`}>
+          <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+            Suggested revision
+          </p>
+          <p className="text-[13px] font-medium" style={{ color: "var(--text)" }}>
+            {review.suggestedRevision}
+          </p>
+          <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+            ~{review.revisionMinutes} minutes
+          </p>
+        </div>
+      )}
+
+      <div className={`${cardClass} flex flex-col gap-2`}>
+        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+          Common interview mistake
+        </p>
+        <p className="text-[13px] leading-relaxed" style={{ color: "var(--text)" }}>
+          {review.commonInterviewMistake}
+        </p>
+      </div>
+
+      <div className={`${cardClass} flex flex-col gap-2`}>
+        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+          Production example
+        </p>
+        <p className="text-[13px] leading-relaxed" style={{ color: "var(--text)" }}>
+          {review.productionExample}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function SummaryTab({ lesson }: { lesson: Lesson }) {
   const { data, isLoading } = useSummaryQuery(lesson.id);
-  const generateMutation = useGenerateSummaryMutation(lesson);
+  const generateMutation = useGenerateSummaryMutation(lesson.id);
 
-  const summary = data?.summary ?? null;
+  const review = data?.summary ?? null;
   const generating = generateMutation.isPending;
+  const personalized =
+    review &&
+    typeof review === "object" &&
+    isPersonalizedReview(review as Record<string, unknown>);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <div className="flex flex-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2
-          className={panelHeadingClass}
-          style={{ color: "var(--text)" }}
-        >
-          {generating ? LABEL_GENERATING : LABEL_HEADING}
-        </h2>
+        <div className="min-w-0">
+          <h2 className={panelHeadingClass} style={{ color: "var(--text)" }}>
+            {generating ? LABEL_GENERATING : LABEL_HEADING}
+          </h2>
+          <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+            Mentor-mode review personalized to your quiz and activity
+          </p>
+        </div>
         <PrimaryButton
           onClick={() => generateMutation.mutate()}
           disabled={generating}
           fullWidth
         >
-          {summary ? (
+          {review ? (
             <RiRefreshLine size={14} />
           ) : (
             <RiSparkling2Line size={14} />
           )}
           {generating
             ? LABEL_GENERATING
-            : summary
+            : review
               ? LABEL_REGENERATE
               : LABEL_GENERATE}
         </PrimaryButton>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pr-0 sm:pr-1">
-        {isLoading && !summary ? (
+        {isLoading && !review ? (
           <SkeletonSummary />
-        ) : generating && !summary ? (
+        ) : generating && !review ? (
           <SkeletonSummary />
-        ) : !generating && !summary ? (
+        ) : !generating && !review ? (
           <EmptyState
             icon={<RiBookOpenLine size={22} />}
-            title="No summary yet"
+            title="No review yet"
             description={LABEL_EMPTY}
             fill
           />
         ) : null}
 
-        {!generating && summary && (
-          <div className="flex flex-col gap-4 pb-2">
-            <div className={`${cardClass} flex flex-col gap-3`}>
-              <p
-                className="text-[10px] font-semibold uppercase tracking-widest"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {LABEL_OVERVIEW}
-              </p>
-              <p
-                className="break-words text-[13px] leading-relaxed"
-                style={{ color: "var(--text)" }}
-              >
-                {summary.overview}
-              </p>
-            </div>
+        {!generating && personalized && (
+          <PersonalizedReviewView review={review as PersonalizedReview} />
+        )}
 
-            <div className={`${cardClass} flex flex-col gap-4`}>
-              <p
-                className="mb-4 text-[10px] font-semibold uppercase tracking-widest"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {LABEL_KEY_POINTS}
-              </p>
-              <div className="flex flex-col gap-3">
-                {summary.keyPoints.map((pt, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <span
-                      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                      style={{ background: "var(--accent)" }}
-                    >
-                      {i + 1}
-                    </span>
-                    <p
-                      className="min-w-0 flex-1 break-words text-[13px] leading-relaxed"
-                      style={{ color: "var(--text)" }}
-                    >
-                      {pt}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div
-              className="rounded-xl border p-4 sm:p-5"
-              style={{
-                background: "var(--accent-soft)",
-                border: "1px solid var(--accent-border)",
-                borderLeftWidth: 3,
-                borderLeftColor: "var(--accent)",
-              }}
-            >
-              <p
-                className="mb-2 text-[10px] font-semibold uppercase tracking-widest"
-                style={{ color: "var(--accent)" }}
-              >
-                {LABEL_IMPORTANT}
-              </p>
-              <p
-                className="break-words text-[14px] leading-relaxed sm:text-[15px]"
-                style={{
-                  color: "var(--text)",
-                  fontFamily: "'Lora', serif",
-                  fontStyle: "italic",
-                }}
-              >
-                {summary.remember}
-              </p>
-            </div>
-          </div>
+        {!generating && review && !personalized && (
+          <p className="text-[13px]" style={{ color: "var(--text-muted)" }}>
+            Regenerate to get a personalized review based on your latest activity.
+          </p>
         )}
       </div>
     </div>

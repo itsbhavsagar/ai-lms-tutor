@@ -1,4 +1,11 @@
 import Groq from "groq-sdk";
+import { parseJsonFromModel } from "@/lib/ai/parse-json";
+import {
+  buildPracticeSystemPrompt,
+  buildPracticeUserPrompt,
+} from "@/lib/ai/prompts/practice";
+import { getLessonById } from "@/lib/curriculum";
+import { buildLearnerProfileSafe } from "@/lib/db/learner-profile";
 import { prisma } from "@/lib/db/prisma";
 import { jsonApiError } from "@/lib/utils/apiError";
 
@@ -38,7 +45,7 @@ export async function GET(req: Request) {
       return Response.json({ quiz: null, attempts: [] });
     }
 
-    const questions = JSON.parse(quiz.questions as any) as any[];
+    const questions = JSON.parse(quiz.questions as string) as unknown[];
     return Response.json({
       quiz: { ...quiz, questions },
       attempts: quiz.attempts,
@@ -51,7 +58,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { lessonContent, lessonTitle, userId, lessonId } = await req.json();
+    const { userId, lessonId } = await req.json();
 
     if (!userId || !lessonId) {
       return Response.json(
@@ -60,37 +67,23 @@ export async function POST(req: Request) {
       );
     }
 
+    const lesson = getLessonById(lessonId);
+    if (!lesson) {
+      return Response.json({ error: "Lesson not found" }, { status: 404 });
+    }
+
+    const profile = await buildLearnerProfileSafe(userId, lessonId);
+
     const response = await client.chat.completions.create({
       model: "llama-3.1-8b-instant",
       messages: [
-        {
-          role: "system",
-          content: `You are a quiz generator for an LMS platform.
-        Return ONLY a valid JSON array. No explanation, no markdown, no backticks.
-        Generate exactly 4 multiple choice questions based on the lesson content.
-        
-        Format:
-        [
-          {
-            "question": "Question text here?",
-            "options": ["Option A", "Option B", "Option C", "Option D"],
-            "correct": 0
-          }
-        ]
-        
-        "correct" is the index (0-3) of the correct option.
-        Make questions clear and educational.`,
-        },
-        {
-          role: "user",
-          content: `Generate a quiz for this lesson about ${lessonTitle}:\n\n${lessonContent}`,
-        },
+        { role: "system", content: buildPracticeSystemPrompt(profile) },
+        { role: "user", content: buildPracticeUserPrompt(lesson) },
       ],
     });
 
     const raw = response.choices[0].message.content || "[]";
-    const cleaned = raw.replace(/```json|```/g, "").trim();
-    const questions = JSON.parse(cleaned);
+    const questions = parseJsonFromModel(raw, []);
 
     await prisma.user.upsert({
       where: { id: userId },
@@ -105,8 +98,6 @@ export async function POST(req: Request) {
         questions: JSON.stringify(questions),
       },
     });
-
-    console.log(`[Quiz] Created quiz: ${quiz.id}`);
 
     return Response.json({ questions });
   } catch (error) {

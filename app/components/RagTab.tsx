@@ -146,7 +146,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
               {LABEL_HEADING}
             </h2>
             <p
-              className="break-words text-[12px]"
+              className="wrap-wrap-wrap-break-word text-[12px]"
               style={{ color: "var(--text-muted)" }}
             >
               {LABEL_SUBHEADING}
@@ -220,13 +220,13 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                 {file ? (
                   <>
                     <p
-                      className="max-w-full break-words text-[13px] font-semibold"
+                      className="max-w-full wrap-wrap-break-word text-[13px] font-semibold"
                       style={{ color: "var(--text)" }}
                     >
                       {file.name}
                     </p>
                     <p
-                      className="break-words text-[11px]"
+                      className="wrap-wrap-break-word text-[11px]"
                       style={{ color: "var(--text-muted)" }}
                     >
                       {(file.size / 1024).toFixed(1)} KB — {LABEL_PDF_CHANGE}
@@ -235,13 +235,13 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                 ) : (
                   <>
                     <p
-                      className="break-words text-[13px] font-medium"
+                      className="wrap-wrap-break-word text-[13px] font-medium"
                       style={{ color: "var(--text)" }}
                     >
                       {LABEL_PDF_CLICK}
                     </p>
                     <p
-                      className="break-words text-[11px]"
+                      className="wrap-wrap-break-word text-[11px]"
                       style={{ color: "var(--text-muted)" }}
                     >
                       {LABEL_PDF_HINT}
@@ -279,7 +279,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
               border: "1px solid var(--green-border)",
             }}
           >
-            <span className="min-w-0 break-words">{statusText}</span>
+            <span className="min-w-0 wrap-wrap-break-word">{statusText}</span>
             <button
               onClick={handleReIndex}
               className="underline"
@@ -322,7 +322,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                     </div>
                   )}
                   <div
-                    className="min-w-0 max-w-[88%] break-words rounded-2xl px-3 py-2.5 text-[13px] leading-relaxed sm:max-w-[78%] sm:px-4 lg:max-w-[72%]"
+                    className="min-w-0 max-w-[88%] wrap-wrap-break-word rounded-2xl px-3 py-2.5 text-[13px] leading-relaxed sm:max-w-[78%] sm:px-4 lg:max-w-[72%]"
                     style={
                       msg.role === "user"
                         ? {
@@ -343,7 +343,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                     ) : msg.role === "assistant" &&
                       loading &&
                       i === messages.length - 1 ? (
-                      <div className="space-y-2 break-words">
+                      <div className="space-y-2 wrap-wrap-break-word">
                         <MessageContent content={msg.content} />
                         <span style={{ color: "var(--text-muted)" }}>
                           {LABEL_RETRIEVING}
@@ -352,7 +352,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                     ) : msg.role === "assistant" ? (
                       <MessageContent content={msg.content} />
                     ) : (
-                      <span className="whitespace-pre-wrap break-words">
+                      <span className="whitespace-pre-wrap wrap-wrap-break-word">
                         {msg.content}
                       </span>
                     )}

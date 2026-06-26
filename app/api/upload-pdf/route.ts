@@ -69,7 +69,6 @@ export async function POST(req: Request) {
     }
 
     const chunks = chunkText(text);
-    console.log(`[RAG] Processing ${chunks.length} chunks from ${file.name}`);
 
     const batchSize = 90;
     const allEmbeddings: number[][] = [];
@@ -102,8 +101,6 @@ export async function POST(req: Request) {
       },
     });
 
-    console.log(`[RAG] Document created: ${document.id}`);
-
     await prisma.chunk.createMany({
       data: chunks.map((text, i) => ({
         documentId: document.id,
@@ -111,10 +108,6 @@ export async function POST(req: Request) {
         embedding: allEmbeddings[i],
       })),
     });
-
-    console.log(
-      `[RAG] Created ${chunks.length} chunks for document ${document.id}`,
-    );
 
     return Response.json({
       success: true,
