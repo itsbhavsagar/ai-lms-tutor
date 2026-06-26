@@ -1,8 +1,7 @@
 "use client";
 import { Lesson } from "../data/lessons";
 import {
-  RiSparkling2Line,
-  RiRefreshLine,
+  RiArticleLine,
   RiBookOpenLine,
 } from "react-icons/ri";
 import {
@@ -14,13 +13,12 @@ import {
   type PersonalizedReview,
 } from "@/app/types/summary";
 import EmptyState from "./ui/EmptyState";
-import PrimaryButton from "./ui/PrimaryButton";
+import GenerateRegenerateButton from "./ui/GenerateRegenerateButton";
 import { SkeletonSummary } from "./ui/Skeleton";
+import { LABEL_GENERATING } from "@/lib/ui/labels";
 import { cardClass, panelHeadingClass, scrollAreaClass } from "@/lib/ui/styles";
 
 const LABEL_GENERATE = "Generate Review";
-const LABEL_REGENERATE = "Regenerate";
-const LABEL_GENERATING = "Generating…";
 const LABEL_EMPTY =
   "AI builds a personalized review from your quiz gaps and learner profile";
 const LABEL_HEADING = "Your Review";
@@ -107,6 +105,8 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
 
   const review = data?.summary ?? null;
   const generating = generateMutation.isPending;
+  const reviewLoaded = !isLoading;
+  const hasReview = !!review;
   const personalized =
     review &&
     typeof review === "object" &&
@@ -123,22 +123,15 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
             Mentor-mode review personalized to your quiz and activity
           </p>
         </div>
-        <PrimaryButton
+        <GenerateRegenerateButton
+          loaded={reviewLoaded}
+          hasContent={hasReview}
+          generating={generating}
+          generateLabel={LABEL_GENERATE}
           onClick={() => generateMutation.mutate()}
-          disabled={generating}
+          GenerateIcon={RiArticleLine}
           fullWidth
-        >
-          {review ? (
-            <RiRefreshLine size={14} />
-          ) : (
-            <RiSparkling2Line size={14} />
-          )}
-          {generating
-            ? LABEL_GENERATING
-            : review
-              ? LABEL_REGENERATE
-              : LABEL_GENERATE}
-        </PrimaryButton>
+        />
       </div>
 
       <div className={`${scrollAreaClass} pr-0 sm:pr-1`}>

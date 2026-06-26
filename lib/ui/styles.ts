@@ -1,3 +1,15 @@
+export const chatComposerShellClass =
+  "chat-composer relative z-0 flex w-full items-end gap-1 overflow-visible px-2 py-2";
+
+export const chatComposerFieldClass =
+  "chat-composer-field max-h-40 min-h-8 flex-1 resize-none overflow-y-auto border-0 bg-transparent py-1.5 pl-1.5 pr-0 text-[13px] leading-5 text-ink outline-none focus:outline-none focus-visible:outline-none";
+
+export const skeletonButtonCompactClass =
+  "h-9 w-9 shrink-0 animate-pulse rounded-xl bg-surface-raised sm:h-10 sm:w-30";
+
+export const skeletonButtonFullClass =
+  "h-10 w-full shrink-0 animate-pulse rounded-xl bg-surface-raised sm:w-36";
+
 export const btnInteractive =
   "cursor-pointer transition-all duration-150 ease-out active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100 disabled:opacity-50";
 
@@ -20,6 +32,11 @@ export const appShellClass =
 export const floatingSidebarClass =
   "floating-sidebar flex min-h-0 w-full flex-1 flex-col overflow-hidden";
 
+export const mainHeaderClass =
+  "main-header flex flex-none flex-col border-b border-border";
+
+export const mainBodyClass = "main-body flex min-h-0 min-w-0 flex-1 flex-col";
+
 export const floatingMainClass =
   "floating-main flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden";
 
@@ -27,7 +44,17 @@ export const contentCardClass = "content-card flex h-full min-h-0 min-w-0 flex-c
 
 export const contentCardLearnClass = `${contentCardClass} overflow-hidden p-0`;
 
-export const contentCardTabClass = `${contentCardClass} p-3 sm:p-4 md:p-6`;
+export const contentCardTabClass = `${contentCardClass} p-2.5 sm:p-4 md:p-6`;
+
+export const chatTabShellClass = "relative flex min-h-0 flex-1 overflow-hidden";
+
+export const chatTabInnerClass =
+  "relative flex min-h-0 min-w-0 flex-1 flex-col";
+
+export const chatTabBodyClass = "flex min-h-0 flex-1 flex-col px-3 py-3 sm:px-4";
+
+export const chatComposerFooterClass =
+  "relative z-10 mt-3 w-full flex-none border-t border-border pt-3";
 
 export const scrollClipClass = "scroll-clip";
 
@@ -36,7 +63,8 @@ export const scrollAreaClass =
 
 export const tabsScrollClipClass = "tabs-scroll-clip";
 
-export const tabsScrollClass = "tabs-scroll";
+export const tabsScrollClass =
+  "flex w-max min-w-full flex-row flex-nowrap items-center gap-1";
 
 export const overlayBackdropClass = "overlay-backdrop absolute inset-0";
 
@@ -69,7 +97,7 @@ export const inputFieldClass = `${plainFieldClass} border border-border-strong b
 export const raisedFieldClass = `${plainFieldClass} border border-border-strong bg-surface-raised text-ink`;
 
 export const tabBtnClass =
-  "relative flex items-center gap-1.5 rounded-lg px-3 py-2.5 text-[13px] font-medium whitespace-nowrap transition-colors duration-200";
+  "relative flex shrink-0 flex-row items-center gap-1.5 rounded-lg px-3 py-2.5 text-[13px] font-medium whitespace-nowrap transition-colors duration-200";
 
 export const tabBtnActiveClass = "bg-accent-soft font-semibold text-ink";
 

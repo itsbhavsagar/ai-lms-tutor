@@ -44,7 +44,13 @@ import {
 import { usePersistedLessonSessionId } from "@/lib/hooks/usePersistedLessonSessionId";
 import { queryKeys } from "@/lib/query/keys";
 import { useLessonWorkflowProgress } from "@/lib/hooks/useLessonWorkflowProgress";
-import { scrollAreaClass } from "@/lib/ui/styles";
+import {
+  chatComposerFooterClass,
+  chatTabBodyClass,
+  chatTabInnerClass,
+  chatTabShellClass,
+  scrollAreaClass,
+} from "@/lib/ui/styles";
 import ChatComposer from "./chat/ChatComposer";
 import ChatHistoryToolbar, {
   ChatHistoryDrawerLayer,
@@ -665,8 +671,8 @@ export default function ChatTab({
   };
 
   return (
-    <div className="relative flex min-h-0 flex-1 overflow-hidden">
-      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+    <div className={chatTabShellClass}>
+      <div className={chatTabInnerClass}>
         {headerActionsEl &&
           showToolbar &&
           createPortal(
@@ -687,10 +693,10 @@ export default function ChatTab({
           />
         )}
 
-        <div className="flex min-h-0 flex-1 flex-col px-3 py-3 sm:px-4">
+        <div className={chatTabBodyClass}>
           <div
             ref={messagesContainerRef}
-            className={scrollAreaClass}
+            className={`${scrollAreaClass} relative z-0`}
           >
             <ChatMessagesPanel
               lesson={lesson}
@@ -707,7 +713,7 @@ export default function ChatTab({
             />
           </div>
 
-          <div className="mt-3 w-full flex-none border-t border-border pt-3">
+          <div className={chatComposerFooterClass}>
             <ChatComposer
               {...composerProps}
               placeholder={

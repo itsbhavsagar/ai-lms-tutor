@@ -3,8 +3,7 @@ import { useState } from "react";
 import { Lesson } from "../data/lessons";
 import type { QuizQuestion } from "../types/quiz";
 import {
-  RiSparkling2Line,
-  RiRefreshLine,
+  RiQuestionnaireLine,
   RiFileTextLine,
   RiCheckLine,
   RiCloseLine,
@@ -17,8 +16,11 @@ import {
 } from "@/lib/hooks/queries/useQuiz";
 import type { QuizGetResponse } from "@/lib/api/quiz";
 import EmptyState from "./ui/EmptyState";
+import GenerateRegenerateButton from "./ui/GenerateRegenerateButton";
+import GeneratingIndicator from "./ui/GeneratingIndicator";
 import PrimaryButton from "./ui/PrimaryButton";
 import { SkeletonQuiz } from "./ui/Skeleton";
+import { LABEL_GENERATING } from "@/lib/ui/labels";
 import {
   breakAnywhereClass,
   panelHeadingClass,
@@ -32,8 +34,6 @@ import {
 } from "@/lib/ui/styles";
 
 const LABEL_GENERATE = "Generate Quiz";
-const LABEL_REGENERATE = "Regenerate";
-const LABEL_GENERATING = "Generating…";
 const LABEL_SUBMIT = "Submit Quiz";
 const LABEL_QUESTIONS = "Questions";
 const LABEL_ANSWERED = "answered";
@@ -91,6 +91,8 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
   const submitted = hasAttempts || draftSubmitted;
 
   const generating = generateMutation.isPending;
+  const quizLoaded = !isLoading;
+  const hasQuiz = (quizData?.questions.length ?? 0) > 0;
   const questions = quizData?.questions || [];
   const score =
     submitted && quizData?.lastScore !== undefined
@@ -162,7 +164,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
         <div className="min-w-0 justify-self-start">
           <h2 className={panelHeadingClass}>
             {generating
-              ? LABEL_GENERATING
+              ? LABEL_HEADING
               : questions.length > 0
                 ? `${questions.length} ${LABEL_QUESTIONS}`
                 : LABEL_HEADING}
@@ -187,47 +189,48 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
           )}
         </div>
 
-        <div className="justify-self-center text-center">
-          {submitted && quizData && questions.length > 0 && !generating && (
-            <>
-              <p className="text-2xl font-bold leading-none text-ink sm:text-3xl">
-                {pct}%
-              </p>
-              <p className="mt-1 text-[11px] font-medium text-ink sm:text-[12px]">
-                {score} / {questions.length} {LABEL_CORRECT}
-              </p>
-              <p className="mt-0.5 text-[10px] leading-snug text-muted sm:text-[11px]">
-                {feedbackMsg}
-              </p>
-            </>
+        <div className="min-w-0 justify-self-center text-center">
+          {generating ? (
+            <GeneratingIndicator label={LABEL_GENERATING} />
+          ) : (
+            submitted &&
+            quizData &&
+            questions.length > 0 && (
+              <>
+                <p className="text-lg font-bold leading-none text-ink max-sm:text-base sm:text-2xl lg:text-3xl">
+                  {pct}%
+                </p>
+                <p className="mt-1 text-[10px] font-medium text-ink max-sm:hidden sm:text-[12px]">
+                  {score} / {questions.length} {LABEL_CORRECT}
+                </p>
+                <p className="mt-0.5 text-[10px] leading-snug text-muted max-sm:line-clamp-2 max-sm:text-[9px] sm:text-[11px]">
+                  {feedbackMsg}
+                </p>
+              </>
+            )
           )}
         </div>
 
         <div className="justify-self-end">
-          <PrimaryButton
+          <GenerateRegenerateButton
+            loaded={quizLoaded}
+            hasContent={hasQuiz}
+            generating={generating}
+            generateLabel={LABEL_GENERATE}
             onClick={handleGenerateQuiz}
-            disabled={generating}
-            className="shrink-0 whitespace-nowrap px-2.5 py-1.5 text-[12px] sm:px-4 sm:py-2.5 sm:text-[13px]"
-          >
-          {questions.length > 0 ? (
-            <RiRefreshLine size={14} />
-          ) : (
-            <RiSparkling2Line size={14} />
-          )}
-          {generating
-            ? LABEL_GENERATING
-            : questions.length > 0
-              ? LABEL_REGENERATE
-              : LABEL_GENERATE}
-          </PrimaryButton>
+            GenerateIcon={RiQuestionnaireLine}
+            hideLabelWhileGenerating
+            iconOnlyOnMobile
+            className="shrink-0 px-2 py-1.5 text-[12px] max-sm:aspect-square max-sm:px-2 sm:px-4 sm:py-2.5 sm:text-[13px]"
+          />
         </div>
       </div>
 
       {isLoading && !quizData ? (
         <SkeletonQuiz />
-      ) : generating && questions.length === 0 ? (
+      ) : generating ? (
         <SkeletonQuiz />
-      ) : !generating && questions.length === 0 ? (
+      ) : questions.length === 0 ? (
         <EmptyState
           icon={<RiFileTextLine size={22} />}
           title="No quiz yet"

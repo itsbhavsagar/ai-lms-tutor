@@ -20,6 +20,8 @@ import {
   contentCardLearnClass,
   contentCardTabClass,
   floatingMainClass,
+  mainHeaderClass,
+  mainBodyClass,
   floatingSidebarClass,
   pageSubtitleClass,
   pageTitleClass,
@@ -60,7 +62,7 @@ export default function Home() {
       />
 
       <main className={floatingMainClass}>
-        <div className="flex flex-none flex-col border-b border-border px-3 pt-3 sm:px-6 md:px-8 md:pt-6">
+        <div className={mainHeaderClass}>
           <div className="mb-2 flex min-w-0 items-start gap-2 sm:gap-3">
             <MobileNavToggle onOpen={() => setMobileNavOpen(true)} />
             <div className="min-w-0 flex-1">
@@ -105,10 +107,11 @@ export default function Home() {
           )}
         </div>
 
-        <div className="min-h-0 min-w-0 flex-1 overflow-hidden p-3 sm:p-4 md:p-6">
+        <div className={mainBodyClass}>
           <div
             className={
-              !recruiterMode && activeTab === "learn"
+              !recruiterMode &&
+              (activeTab === "learn" || activeTab === "live-chat")
                 ? contentCardLearnClass
                 : contentCardTabClass
             }

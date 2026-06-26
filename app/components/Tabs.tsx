@@ -4,7 +4,7 @@ import {
   RiFlashlightLine,
   RiFileTextLine,
   RiPlayCircleLine,
-  RiSparkling2Line,
+  RiBookReadLine,
   RiStickyNoteLine,
   RiUserVoiceLine,
 } from "react-icons/ri";
@@ -43,7 +43,7 @@ const WORKFLOW_TABS: TabDef[] = WORKFLOW_STEPS.map((step) => ({
         ? RiFileTextLine
         : step.id === "interview"
           ? RiUserVoiceLine
-          : RiSparkling2Line,
+          : RiBookReadLine,
 }));
 
 const UTILITY_TABS: TabDef[] = [
@@ -71,7 +71,7 @@ export default function Tabs({
     <div className="-mx-4 min-w-0 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
       <div className="flex min-w-0 items-center gap-2">
         <div className={tabsScrollClipClass}>
-          <div className={`${tabsScrollClass} flex min-w-max items-center gap-1`}>
+          <div className={tabsScrollClass}>
         {TABS.map(({ id, label, Icon }) => {
           const active = showActiveIndicator && activeTab === id;
           const isFirstUtility = id === "notes";
