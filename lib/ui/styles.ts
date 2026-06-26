@@ -11,3 +11,7 @@ export const cardClass =
 export const panelHeadingClass = "text-[15px] font-semibold tracking-tight";
 
 export const panelSubtextClass = "text-[12px] leading-relaxed";
+
+/** No accent focus ring — use on inputs/textareas (notes, chat, etc.). */
+export const plainFieldClass =
+  "plain-field outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:shadow-none focus-visible:shadow-none";

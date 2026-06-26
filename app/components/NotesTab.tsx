@@ -33,7 +33,12 @@ import { showSuccess } from "@/lib/utils/toast";
 import NoteCard from "./notes/NoteCard";
 import EmptyState from "./ui/EmptyState";
 import { SkeletonNoteGrid } from "./ui/Skeleton";
-import { btnInteractive, panelHeadingClass, panelSubtextClass } from "@/lib/ui/styles";
+import {
+  btnInteractive,
+  panelHeadingClass,
+  panelSubtextClass,
+  plainFieldClass,
+} from "@/lib/ui/styles";
 
 const LABEL_NOTES = "Notes";
 const LABEL_NEW = "New Note";
@@ -209,10 +214,68 @@ export default function NotesTab({ lesson }: NotesTabProps) {
         ? `${notes.length} saved + 1 draft`
         : `${notes.length} ${notes.length === 1 ? "note" : "notes"}`;
 
+  const handleCancelEdit = useCallback(() => {
+    if (isDraft) {
+      handleCancelDraft();
+      return;
+    }
+
+    if (selectedNote) {
+      setTitle(selectedNote.title);
+      setContent(selectedNote.content);
+      setLocked(true);
+      return;
+    }
+
+    resetEditor();
+  }, [isDraft, handleCancelDraft, selectedNote, resetEditor]);
+
+  const showMobileEditorToolbar = mobileShowEditor && showEditor;
+
+  const saveButton = (
+    <button
+      type="button"
+      onClick={handleSave}
+      disabled={!content.trim() || isSaving}
+      className={`${btnInteractive} flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[12px] font-semibold sm:gap-1.5 sm:rounded-xl sm:px-3 sm:py-2 sm:text-[13px]`}
+      style={{
+        background: "var(--accent)",
+        color: "var(--on-accent)",
+        opacity: content.trim() && !isSaving ? 1 : 0.4,
+        cursor: content.trim() && !isSaving ? "pointer" : "not-allowed",
+      }}
+    >
+      <RiSaveLine size={13} className="hidden sm:block" />
+      {isSaving ? "Saving…" : LABEL_SAVE}
+    </button>
+  );
+
+  const cancelButton = (
+    <button
+      type="button"
+      onClick={handleCancelEdit}
+      className={`${btnInteractive} flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-[12px] font-medium sm:gap-1.5 sm:rounded-xl sm:px-3 sm:py-2 sm:text-[13px]`}
+      style={{
+        borderColor: "var(--border-strong)",
+        color: "var(--text)",
+        background: "var(--input-bg)",
+      }}
+    >
+      <RiCloseLine size={14} className="hidden sm:block" />
+      {LABEL_CANCEL}
+    </button>
+  );
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex flex-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
+      <div
+        className={`flex flex-none gap-2 sm:items-center sm:justify-between ${
+          showMobileEditorToolbar
+            ? "hidden md:flex md:flex-row"
+            : "flex-row items-start justify-between"
+        }`}
+      >
+        <div className="min-w-0 flex-1">
           <h2
             className={panelHeadingClass}
             style={{ color: "var(--text)" }}
@@ -227,25 +290,9 @@ export default function NotesTab({ lesson }: NotesTabProps) {
           </p>
         </div>
 
-        <div className="flex min-h-[37px] shrink-0 flex-nowrap items-center gap-2 overflow-x-auto">
-          {(isDraft || (hasSavedNoteSelected && !locked)) && (
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={!content.trim() || isSaving}
-              className={`${btnInteractive} flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-semibold`}
-              style={{
-                background: "var(--accent)",
-                color: "var(--on-accent)",
-                opacity: content.trim() && !isSaving ? 1 : 0.4,
-                cursor:
-                  content.trim() && !isSaving ? "pointer" : "not-allowed",
-              }}
-            >
-              <RiSaveLine size={13} />
-              {isSaving ? "Saving…" : LABEL_SAVE}
-            </button>
-          )}
+        <div className="hidden min-h-[37px] shrink-0 flex-nowrap items-center gap-2 md:flex">
+
+          {(isDraft || (hasSavedNoteSelected && !locked)) && saveButton}
 
           {hasSavedNoteSelected && locked && (
             <button
@@ -283,18 +330,7 @@ export default function NotesTab({ lesson }: NotesTabProps) {
           )}
 
           {isDraft ? (
-            <button
-              type="button"
-              onClick={handleCancelDraft}
-              className={`${btnInteractive} flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-semibold`}
-              style={{
-                background: "tomato",
-                color: "#fff",
-              }}
-            >
-              <RiCloseLine size={14} />
-              {LABEL_CANCEL}
-            </button>
+            cancelButton
           ) : (
             <button
               type="button"
@@ -310,6 +346,23 @@ export default function NotesTab({ lesson }: NotesTabProps) {
             </button>
           )}
         </div>
+
+        {!showMobileEditorToolbar && (
+          <div className="flex shrink-0 items-center gap-1.5 md:hidden">
+            <button
+              type="button"
+              onClick={handleNewNote}
+              className={`${btnInteractive} flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[12px] font-semibold`}
+              style={{
+                background: "var(--accent)",
+                color: "var(--on-accent)",
+              }}
+            >
+              <RiAddLine size={14} />
+              {LABEL_NEW}
+            </button>
+          </div>
+        )}
       </div>
 
       {isLoading && notes.length === 0 ? (
@@ -347,16 +400,60 @@ export default function NotesTab({ lesson }: NotesTabProps) {
               mobileShowEditor || showEditor ? "flex" : "hidden md:flex"
             }`}
           >
-            {mobileShowEditor && (
-              <button
-                type="button"
-                onClick={resetEditor}
-                className="mb-2 flex items-center gap-1 text-[12px] font-medium md:hidden"
-                style={{ color: "var(--accent)" }}
-              >
-                <RiArrowLeftLine size={14} />
-                All notes
-              </button>
+            {showMobileEditorToolbar && (
+              <div className="mb-2 flex items-center justify-between gap-2 md:hidden">
+                <button
+                  type="button"
+                  onClick={resetEditor}
+                  className="flex min-w-0 items-center gap-1 text-[14px] font-semibold"
+                  style={{ color: "var(--text)" }}
+                >
+                  <RiArrowLeftLine
+                    size={16}
+                    className="shrink-0"
+                    style={{ color: "var(--accent)" }}
+                  />
+                  <span className="truncate">{LABEL_NOTES}</span>
+                </button>
+
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {locked ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setLocked(false)}
+                        className={`${btnInteractive} flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-[12px] font-medium`}
+                        style={{
+                          borderColor: "var(--border-strong)",
+                          color: "var(--text)",
+                          background: "var(--input-bg)",
+                        }}
+                      >
+                        {LABEL_EDIT}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={deleteMutation.isPending}
+                        className={`${btnInteractive} flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-[12px] font-medium`}
+                        style={{
+                          borderColor: "var(--red-border)",
+                          color: "var(--red)",
+                          background: "var(--red-soft)",
+                          opacity: deleteMutation.isPending ? 0.4 : 1,
+                        }}
+                      >
+                        {LABEL_DELETE}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {saveButton}
+                      {cancelButton}
+                    </>
+                  )}
+                </div>
+              </div>
             )}
 
             {showEditor ? (
@@ -374,7 +471,7 @@ export default function NotesTab({ lesson }: NotesTabProps) {
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="Note title"
-                      className="w-full rounded-lg border px-3 py-2 text-[14px] font-semibold outline-none"
+                      className={`${plainFieldClass} w-full rounded-lg border px-3 py-2 text-[14px] font-semibold`}
                       style={{
                         background: "var(--input-bg)",
                         borderColor: "var(--border-strong)",
@@ -415,7 +512,7 @@ export default function NotesTab({ lesson }: NotesTabProps) {
                       onChange={(e) => setContent(e.target.value)}
                       placeholder={PLACEHOLDER}
                       autoFocus
-                      className="h-full w-full min-w-0 resize-none rounded-xl border p-4 text-[13px] leading-relaxed outline-none sm:p-5"
+                      className={`${plainFieldClass} h-full w-full min-w-0 resize-none rounded-xl border p-4 text-[13px] leading-relaxed sm:p-5`}
                       style={{
                         background: "var(--surface-raised)",
                         borderColor: "var(--border-strong)",

@@ -2,7 +2,8 @@
 import { useState } from "react";
 import Tabs from "./components/Tabs";
 import ChatTab from "./components/ChatTab";
-import LessonTrackSidebar from "./components/LessonTrackSidebar";
+import LessonSidebarPanel from "./components/LessonSidebarPanel";
+import MobileLessonNav, { MobileNavToggle } from "./components/MobileLessonNav";
 import QuizTab from "./components/QuizTab";
 import SummaryTab from "./components/SummaryTab";
 import NotesTab from "./components/NotesTab";
@@ -10,15 +11,8 @@ import RagTab from "./components/RagTab";
 import InterviewTab from "./components/InterviewTab";
 import DemoTab from "./components/DemoTab";
 import RecruiterDashboard from "./components/RecruiterDashboard";
-import { RiGraduationCapLine } from "react-icons/ri";
 import { useAppNavigation } from "@/lib/hooks/useAppNavigation";
 import { useRecruiterMode } from "@/lib/hooks/useRecruiterMode";
-
-const BRAND_NAME = "AI LMS Tutor";
-const BRAND_STACK = "Groq · Cohere · RAG";
-const TRACKS_LABEL = "Learning Tracks";
-const BUILT_BY =
-  "Built by Bhavsagar · Next.js · Groq · Cohere · PostgresSQL · Prisma";
 
 export default function Home() {
   const {
@@ -31,80 +25,45 @@ export default function Home() {
   const { enabled: recruiterMode, toggle: toggleRecruiterMode } = useRecruiterMode();
   const [learnHeaderActionsEl, setLearnHeaderActionsEl] =
     useState<HTMLDivElement | null>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
     <div className="flex h-full w-full min-w-0 flex-col overflow-hidden md:flex-row">
       <aside
-        className="flex max-h-[42dvh] w-full flex-none flex-col overflow-hidden md:h-full md:max-h-none md:w-64 lg:w-72"
+        className="hidden h-full w-64 shrink-0 flex-col overflow-hidden md:flex lg:w-72"
         style={{
           background: "var(--bg-sidebar)",
           borderRight: "1px solid var(--sidebar-border)",
-          borderBottom: "1px solid var(--sidebar-border)",
         }}
       >
-        <div className="flex items-center gap-2.5 px-4 py-4 sm:px-5 md:pt-6 md:pb-5">
-          <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-            style={{ background: "var(--accent)" }}
-          >
-            <RiGraduationCapLine size={16} color="var(--on-accent)" />
-          </div>
-          <div className="min-w-0">
-            <p
-              className="truncate text-[16px] font-semibold leading-tight"
-              style={{ color: "var(--text-sidebar-active)" }}
-            >
-              {BRAND_NAME}
-            </p>
-            <p
-              className="truncate text-[10px]"
-              style={{ color: "var(--text-sidebar)" }}
-            >
-              Powered By: {BRAND_STACK}
-            </p>
-          </div>
-        </div>
-
-        <p
-          className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-widest sm:px-5 md:text-[16px]"
-          style={{ color: "var(--text-sidebar)", opacity: 0.5 }}
-        >
-          {TRACKS_LABEL}
-        </p>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 md:px-3 md:pb-4">
-          <LessonTrackSidebar
-            selectedLessonId={selectedLesson.id}
-            isClientReady={isClientReady}
-            onSelectLesson={selectLesson}
-          />
-        </div>
-
-        <div
-          className="border-t px-4 py-2 sm:px-5 md:py-4"
-          style={{ borderColor: "var(--sidebar-border)" }}
-        >
-          <p
-            className="line-clamp-2 text-[10px] leading-relaxed md:line-clamp-none"
-            style={{ color: "var(--text-sidebar)", opacity: 0.4 }}
-          >
-            {BUILT_BY}
-          </p>
-        </div>
+        <LessonSidebarPanel
+          selectedLessonId={selectedLesson.id}
+          isClientReady={isClientReady}
+          onSelectLesson={selectLesson}
+        />
       </aside>
+
+      <MobileLessonNav
+        open={mobileNavOpen}
+        onOpenChange={setMobileNavOpen}
+        selectedLessonId={selectedLesson.id}
+        isClientReady={isClientReady}
+        onSelectLesson={selectLesson}
+      />
 
       <main
         className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
         style={{ background: "var(--bg)" }}
       >
         <div
-          className="flex flex-none flex-col border-b px-4 pt-4 sm:px-6 md:px-8 md:pt-6"
+          className="flex flex-none flex-col border-b px-3 pt-3 sm:px-6 md:px-8 md:pt-6"
           style={{ borderColor: "var(--border)" }}
         >
-          <div className="mb-2 flex min-w-0 items-start justify-between gap-3">
+          <div className="mb-2 flex min-w-0 items-start gap-2 sm:gap-3">
+            <MobileNavToggle onOpen={() => setMobileNavOpen(true)} />
             <div className="min-w-0 flex-1">
               <h1
-                className="truncate text-xl font-semibold leading-tight tracking-tight sm:text-[22px]"
+                className="truncate text-lg font-semibold leading-tight tracking-tight sm:text-[22px]"
                 style={{ color: "var(--text)" }}
               >
                 {recruiterMode
@@ -114,7 +73,7 @@ export default function Home() {
                     : "\u00A0"}
               </h1>
               <p
-                className="mt-1 max-w-3xl text-[12px] leading-relaxed sm:text-[13px]"
+                className="mt-1 line-clamp-2 max-w-3xl text-[12px] leading-relaxed sm:line-clamp-none sm:text-[13px]"
                 style={{ color: "var(--text-muted)" }}
               >
                 {recruiterMode
@@ -127,7 +86,7 @@ export default function Home() {
             <button
               type="button"
               onClick={toggleRecruiterMode}
-              className="shrink-0 rounded-lg border px-3 py-1.5 text-[11px] font-semibold"
+              className="shrink-0 rounded-lg border px-2.5 py-1.5 text-[10px] font-semibold sm:px-3 sm:text-[11px]"
               style={{
                 borderColor: recruiterMode
                   ? "var(--accent)"

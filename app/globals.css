@@ -101,24 +101,38 @@ button:disabled {
     cursor: not-allowed;
 }
 
-button:focus-visible,
-input:focus-visible,
-textarea:not(.chat-composer-field):focus-visible {
+button:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
 
-.chat-composer:focus-within {
-    outline: none;
-    box-shadow: none;
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    --tw-ring-offset-shadow: 0 0 #0000 !important;
 }
 
+.plain-field,
+.plain-field:focus,
+.plain-field:focus-visible,
 .chat-composer-field,
 .chat-composer-field:focus,
 .chat-composer-field:focus-visible {
     outline: none !important;
     outline-offset: 0 !important;
     box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    --tw-ring-offset-shadow: 0 0 #0000 !important;
+}
+
+.chat-composer:focus-within {
+    outline: none;
+    box-shadow: none;
 }
 
 ::-webkit-scrollbar {
@@ -305,6 +319,21 @@ textarea:not(.chat-composer-field):focus-visible {
 
 .suggestion-chip {
     animation: emptyIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.mobile-nav-drawer {
+    animation: mobileNavIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes mobileNavIn {
+    from {
+        opacity: 0;
+        transform: translateX(-100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
