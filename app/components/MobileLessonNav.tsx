@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { RiCloseLine, RiMenuLine } from "react-icons/ri";
 import type { Lesson } from "@/lib/curriculum";
 import { chatBtnClass } from "@/lib/chat/interactive";
+import { overlayBackdropStrongClass } from "@/lib/ui/styles";
 import LessonSidebarPanel from "./LessonSidebarPanel";
 
 type MobileLessonNavProps = {
@@ -69,10 +70,10 @@ export default function MobileLessonNav({
       <button
         type="button"
         aria-label="Close menu"
-        className="absolute inset-0 bg-black/50 backdrop-blur-[1px]"
+        className={overlayBackdropStrongClass}
         onClick={() => onOpenChange(false)}
       />
-      <div className="mobile-nav-drawer absolute inset-y-0 left-0 flex w-[min(88vw,20rem)] max-w-full flex-col border-r border-sidebar-border bg-sidebar shadow-xl">
+      <div className="mobile-nav-drawer absolute inset-y-3 left-3 flex w-[min(88vw,20rem)] max-w-full flex-col overflow-hidden">
         <div className="flex flex-none justify-end px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <button
             type="button"

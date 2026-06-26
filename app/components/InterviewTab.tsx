@@ -11,7 +11,7 @@ import { markInterviewComplete } from "@/lib/learning/progress";
 import { showError } from "@/lib/utils/toast";
 import PrimaryButton from "./ui/PrimaryButton";
 import { RiSendPlane2Line, RiUserVoiceLine } from "react-icons/ri";
-import { inputFieldClass, panelHeadingClass, panelSubtextClass } from "@/lib/ui/styles";
+import { inputFieldClass, panelHeadingClass, panelSubtextClass, scrollAreaClass } from "@/lib/ui/styles";
 
 export default function InterviewTab({ lesson }: { lesson: Lesson }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -84,7 +84,7 @@ export default function InterviewTab({ lesson }: { lesson: Lesson }) {
         )}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pr-0 sm:pr-1">
+      <div className={`${scrollAreaClass} pr-0 sm:pr-1`}>
         <div className="flex flex-col gap-3 pb-2">
           {messages.length === 0 && (
             <div className="flex flex-col items-center gap-2 py-12 text-center text-muted">

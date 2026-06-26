@@ -64,7 +64,7 @@ export default function ChatComposer({
 
   return (
     <div
-      className={`chat-composer relative w-full rounded-xl border border-border-strong bg-input shadow-sm ${className}`.trim()}
+      className={`chat-composer relative w-full ${className}`.trim()}
     >
       <textarea
         ref={inputRef}

@@ -18,7 +18,7 @@ import {
   RiCloseLine,
   RiDeleteBinLine,
 } from "react-icons/ri";
-import { btnOutlineClass } from "@/lib/ui/styles";
+import { btnOutlineClass, scrollAreaClass } from "@/lib/ui/styles";
 
 export type ChatHistorySessionProps = {
   sessions: SessionSummary[];
@@ -89,7 +89,7 @@ function ChatHistoryDrawer({
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
+      <div className={`${scrollAreaClass} px-2 py-2`}>
         <div className="flex flex-col gap-0.5">
           {sessions.map((session) => (
             <ChatHistorySessionRow

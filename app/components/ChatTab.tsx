@@ -44,6 +44,7 @@ import {
 import { usePersistedLessonSessionId } from "@/lib/hooks/usePersistedLessonSessionId";
 import { queryKeys } from "@/lib/query/keys";
 import { useLessonWorkflowProgress } from "@/lib/hooks/useLessonWorkflowProgress";
+import { scrollAreaClass } from "@/lib/ui/styles";
 import ChatComposer from "./chat/ChatComposer";
 import ChatHistoryToolbar, {
   ChatHistoryDrawerLayer,
@@ -689,7 +690,7 @@ export default function ChatTab({
         <div className="flex min-h-0 flex-1 flex-col px-3 py-3 sm:px-4">
           <div
             ref={messagesContainerRef}
-            className="min-h-0 flex-1 overflow-y-auto"
+            className={scrollAreaClass}
           >
             <ChatMessagesPanel
               lesson={lesson}

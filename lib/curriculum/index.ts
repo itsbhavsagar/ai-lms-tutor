@@ -41,4 +41,5 @@ export function getTrackForLesson(lessonId: string): Track | undefined {
 }
 
 export { lessons, tracks };
+export { getLessonIcon, getTrackIcon } from "./sidebar-icons";
 export type { Lesson, Track, TrackId } from "./types";

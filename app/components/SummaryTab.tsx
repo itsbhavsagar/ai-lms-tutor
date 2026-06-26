@@ -16,7 +16,7 @@ import {
 import EmptyState from "./ui/EmptyState";
 import PrimaryButton from "./ui/PrimaryButton";
 import { SkeletonSummary } from "./ui/Skeleton";
-import { cardClass, panelHeadingClass } from "@/lib/ui/styles";
+import { cardClass, panelHeadingClass, scrollAreaClass } from "@/lib/ui/styles";
 
 const LABEL_GENERATE = "Generate Review";
 const LABEL_REGENERATE = "Regenerate";
@@ -141,7 +141,7 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
         </PrimaryButton>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pr-0 sm:pr-1">
+      <div className={`${scrollAreaClass} pr-0 sm:pr-1`}>
         {isLoading && !review ? (
           <SkeletonSummary />
         ) : generating && !review ? (

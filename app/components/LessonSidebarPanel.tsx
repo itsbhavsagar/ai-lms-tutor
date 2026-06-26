@@ -1,11 +1,13 @@
 "use client";
 
-import { RiGraduationCapLine } from "react-icons/ri";
+import { RiBookOpenLine, RiMap2Line } from "react-icons/ri";
 import type { Lesson } from "@/lib/curriculum";
+import { scrollAreaClass } from "@/lib/ui/styles";
 import LessonTrackSidebar from "./LessonTrackSidebar";
 import SidebarFooter from "./SidebarFooter";
 
-const BRAND_NAME = "AI LMS Tutor";
+const BRAND_NAME = "AI LMS TUTOR";
+const BRAND_TAGLINE = "Your AI learning studio";
 const BRAND_STACK = "Groq · Cohere · RAG";
 const TRACKS_LABEL = "Learning Tracks";
 
@@ -24,30 +26,30 @@ export default function LessonSidebarPanel({
 }: LessonSidebarPanelProps) {
   return (
     <div className={`flex min-h-0 flex-1 flex-col ${className}`.trim()}>
-      <div className="flex flex-none items-center gap-2.5 px-4 py-4 sm:px-5 md:pt-6 md:pb-5">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent">
-          <RiGraduationCapLine size={16} className="text-on-accent" />
+      <header className="sidebar-brand">
+        <div className="sidebar-brand-mark" aria-hidden>
+          <RiBookOpenLine size={22} />
         </div>
         <div className="min-w-0">
-          <p className="truncate text-[16px] font-semibold leading-tight text-sidebar-text-active">
-            {BRAND_NAME}
-          </p>
-          <p className="truncate text-[10px] text-sidebar-text">
-            Powered By: {BRAND_STACK}
-          </p>
+          <p className="sidebar-brand-title">{BRAND_NAME}</p>
+          <p className="sidebar-brand-tagline">{BRAND_TAGLINE}</p>
+          <p className="sidebar-brand-subtitle">{BRAND_STACK}</p>
         </div>
-      </div>
+      </header>
 
-      <p className="mb-2 flex-none px-4 text-[11px] font-semibold uppercase tracking-widest text-sidebar-text opacity-50 sm:px-5 md:text-[12px]">
-        {TRACKS_LABEL}
-      </p>
+      <div className="sidebar-nav-inner">
+        <p className="sidebar-section-label">
+          <RiMap2Line size={13} aria-hidden />
+          {TRACKS_LABEL}
+        </p>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 md:px-3 md:pb-4">
-        <LessonTrackSidebar
-          selectedLessonId={selectedLessonId}
-          isClientReady={isClientReady}
-          onSelectLesson={onSelectLesson}
-        />
+        <div className={`${scrollAreaClass} min-h-0 flex-1`}>
+          <LessonTrackSidebar
+            selectedLessonId={selectedLessonId}
+            isClientReady={isClientReady}
+            onSelectLesson={onSelectLesson}
+          />
+        </div>
       </div>
 
       <SidebarFooter />

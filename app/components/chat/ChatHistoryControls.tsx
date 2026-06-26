@@ -9,6 +9,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { chatBtnClass } from "@/lib/chat/interactive";
+import { overlayBackdropClass } from "@/lib/ui/styles";
 import { RiPencilLine, RiHistoryLine } from "react-icons/ri";
 import ChatHistoryDrawer, {
   type ChatHistorySessionProps,
@@ -203,7 +204,7 @@ export const ChatHistoryDrawerLayer = memo(function ChatHistoryDrawerLayer({
       <button
         type="button"
         aria-label="Close history"
-        className="absolute inset-0 z-40 bg-black/20"
+        className={`${overlayBackdropClass} z-40`}
         onClick={onClose}
       />
       <ChatHistoryDrawer

@@ -5,9 +5,9 @@ import Providers from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AI LMS Tutor",
+  title: "MentorAI",
   description:
-    "AI-powered learning platform with RAG, quizzes, summaries and voice input",
+    "AI-powered learning studio with mentor chat, quizzes, summaries, notes, and RAG",
 };
 
 export const viewport: Viewport = {

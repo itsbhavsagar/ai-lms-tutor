@@ -28,6 +28,7 @@ import {
   quizOptionDimmedClass,
   quizOptionSelectedClass,
   quizOptionWrongClass,
+  scrollAreaClass,
 } from "@/lib/ui/styles";
 
 const LABEL_GENERATE = "Generate Quiz";
@@ -157,8 +158,8 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 sm:gap-4">
-      <div className="flex min-w-0 flex-none items-start justify-between gap-2">
-        <div className="min-w-0 flex flex-1 flex-col gap-0.5">
+      <div className="grid min-w-0 flex-none grid-cols-3 items-start gap-2 sm:gap-3">
+        <div className="min-w-0 justify-self-start">
           <h2 className={panelHeadingClass}>
             {generating
               ? LABEL_GENERATING
@@ -171,7 +172,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
               {answered} / {questions.length} {LABEL_ANSWERED}
             </p>
           )}
-          {submitted && !generating && (
+          {submitted && !generating && questions.length > 0 && (
             <p className={panelSubtextClass}>
               {score} / {questions.length} {LABEL_CORRECT}
             </p>
@@ -186,11 +187,28 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
           )}
         </div>
 
-        <PrimaryButton
-          onClick={handleGenerateQuiz}
-          disabled={generating}
-          className="shrink-0 whitespace-nowrap px-2.5 py-1.5 text-[12px] sm:px-4 sm:py-2.5 sm:text-[13px]"
-        >
+        <div className="justify-self-center text-center">
+          {submitted && quizData && questions.length > 0 && !generating && (
+            <>
+              <p className="text-2xl font-bold leading-none text-ink sm:text-3xl">
+                {pct}%
+              </p>
+              <p className="mt-1 text-[11px] font-medium text-ink sm:text-[12px]">
+                {score} / {questions.length} {LABEL_CORRECT}
+              </p>
+              <p className="mt-0.5 text-[10px] leading-snug text-muted sm:text-[11px]">
+                {feedbackMsg}
+              </p>
+            </>
+          )}
+        </div>
+
+        <div className="justify-self-end">
+          <PrimaryButton
+            onClick={handleGenerateQuiz}
+            disabled={generating}
+            className="shrink-0 whitespace-nowrap px-2.5 py-1.5 text-[12px] sm:px-4 sm:py-2.5 sm:text-[13px]"
+          >
           {questions.length > 0 ? (
             <RiRefreshLine size={14} />
           ) : (
@@ -201,7 +219,8 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
             : questions.length > 0
               ? LABEL_REGENERATE
               : LABEL_GENERATE}
-        </PrimaryButton>
+          </PrimaryButton>
+        </div>
       </div>
 
       {isLoading && !quizData ? (
@@ -217,22 +236,8 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
         />
       ) : null}
 
-      {submitted && quizData && questions.length > 0 && !generating && (
-        <div className="w-full flex-none rounded-xl border border-accent-border bg-accent-soft p-4 text-center sm:p-6">
-          <p className="mb-1 text-4xl font-bold text-ink sm:text-5xl">
-            {pct}%
-          </p>
-          <p className="text-[13px] font-medium text-ink">
-            {score} / {questions.length} {LABEL_CORRECT}
-          </p>
-          <p className="mt-1 text-[12px] text-muted">
-            {feedbackMsg}
-          </p>
-        </div>
-      )}
-
       {!generating && questions.length > 0 && (
-        <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
+        <div className={scrollAreaClass}>
           <div className="flex min-w-0 flex-col gap-3 pb-2 sm:gap-4">
             {previousAttempts.length > 1 && submitted && (
               <div className="rounded-xl border border-border bg-surface-raised p-4">

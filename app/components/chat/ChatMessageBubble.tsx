@@ -11,6 +11,10 @@ import {
 } from "react-icons/ri";
 import { showSuccess } from "@/lib/utils/toast";
 import { chatBtnSubtleClass } from "@/lib/chat/interactive";
+import {
+  chatBubbleAssistantClass,
+  chatBubbleUserClass,
+} from "@/lib/ui/styles";
 
 type ChatMessageBubbleProps = {
   message: ChatMessage;
@@ -52,11 +56,7 @@ export default function ChatMessageBubble({
         <div
           className={`stream-bubble relative min-w-0 wrap-wrap-break-word rounded-xl px-3 py-2.5 text-[13px] leading-relaxed sm:px-3.5 ${
             isStreaming ? "is-streaming" : ""
-          } ${
-            isUser
-              ? "rounded-br-sm bg-chat-user text-chat-user-fg"
-              : "rounded-bl-sm border border-accent-border bg-accent-soft text-ink"
-          }`}
+          } ${isUser ? chatBubbleUserClass : chatBubbleAssistantClass}`}
         >
           {isThinking ? (
             <ChatThinkingIndicator />
@@ -70,7 +70,7 @@ export default function ChatMessageBubble({
                 <MessageContent content={message.content} />
               </div>
               {isStreaming && (
-                <span className="stream-cursor ml-0.5 inline-block h-[1em] w-[2px] align-text-bottom bg-accent" />
+                <span className="stream-cursor ml-0.5 inline-block h-[1em] w-[2px] align-text-bottom" />
               )}
             </>
           )}

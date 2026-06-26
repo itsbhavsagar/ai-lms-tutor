@@ -7,7 +7,7 @@ import { streamDemoChat } from "@/lib/api/chat";
 import { readTextStream } from "@/lib/api/client";
 import { withApiToast } from "@/lib/utils/withApiToast";
 import { RiSendPlane2Line, RiPlayCircleLine } from "react-icons/ri";
-import { btnPrimaryClass, inputFieldClass } from "@/lib/ui/styles";
+import { btnPrimaryClass, inputFieldClass, scrollAreaClass } from "@/lib/ui/styles";
 
 const BADGE_TEXT = "Live Chat — streaming chat powered by Groq";
 const EMPTY_HEADING = "Ask me anything";
@@ -64,7 +64,7 @@ const DemoTab = (): JSX.Element => {
         </span>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pr-0 sm:pr-1">
+      <div className={`${scrollAreaClass} pr-0 sm:pr-1`}>
         <div className="flex flex-col gap-3 pb-2">
           {messages.length === 0 && (
             <div className="mt-16 flex flex-col items-center gap-3 text-center text-muted">

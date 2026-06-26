@@ -3,17 +3,13 @@
 import { useCallback, useState } from "react";
 import { RiArrowDownSLine, RiArrowRightSLine } from "react-icons/ri";
 import {
+  getLessonIcon,
   getLessonsByTrack,
   getTrackForLesson,
+  getTrackIcon,
   tracks,
   type Lesson,
 } from "@/lib/curriculum";
-import {
-  lessonDotActiveClass,
-  lessonDotInactiveClass,
-  lessonNavItemActiveClass,
-  lessonNavItemClass,
-} from "@/lib/ui/styles";
 
 type LessonTrackSidebarProps = {
   selectedLessonId: string;
@@ -58,41 +54,50 @@ export default function LessonTrackSidebar({
       {tracks.map((track) => {
         const isExpanded = expandedTrackIds.has(track.id);
         const trackLessons = getLessonsByTrack(track.id);
+        const TrackIcon = getTrackIcon(track.id);
 
         return (
           <div key={track.id} className="min-w-0">
             <button
               type="button"
               onClick={() => toggleTrack(track.id)}
-              className="flex w-full min-w-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-semibold text-sidebar-text-active transition-colors duration-200 hover:bg-sidebar-hover"
+              className="sidebar-track-btn"
               aria-expanded={isExpanded}
             >
               {isExpanded ? (
-                <RiArrowDownSLine size={16} className="shrink-0 opacity-70" />
+                <RiArrowDownSLine size={14} className="sidebar-chevron" />
               ) : (
-                <RiArrowRightSLine size={16} className="shrink-0 opacity-70" />
+                <RiArrowRightSLine size={14} className="sidebar-chevron" />
               )}
-              <span className="truncate">{track.title}</span>
+              <span className="sidebar-track-icon" aria-hidden>
+                <TrackIcon size={15} />
+              </span>
+              <span className="sidebar-track-label">{track.title}</span>
             </button>
 
             {isExpanded && (
-              <div className="mb-1 ml-2 flex flex-col gap-0.5 border-l border-sidebar-border py-0.5 pl-2">
+              <div className="sidebar-lessons">
                 {trackLessons.map((lesson) => {
                   const active =
                     isClientReady && selectedLessonId === lesson.id;
+                  const LessonIcon = getLessonIcon(lesson.id);
 
                   return (
                     <button
                       key={lesson.id}
                       type="button"
                       onClick={() => handleSelectLesson(lesson)}
-                      className={`${lessonNavItemClass} ${active ? lessonNavItemActiveClass : ""}`}
+                      className="sidebar-lesson-btn"
+                      data-active={active}
                     >
                       <span
-                        className={`mt-[7px] h-1 w-1 shrink-0 rounded-full ${active ? lessonDotActiveClass : lessonDotInactiveClass}`}
+                        className="sidebar-lesson-icon"
+                        data-active={active}
                         aria-hidden
-                      />
-                      <span className="min-w-0 leading-snug">{lesson.title}</span>
+                      >
+                        <LessonIcon size={12} />
+                      </span>
+                      <span className="sidebar-lesson-label">{lesson.title}</span>
                     </button>
                   );
                 })}

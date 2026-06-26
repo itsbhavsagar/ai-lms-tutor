@@ -22,7 +22,7 @@ import MessageContent from "./MessageContent";
 import ChatThinkingIndicator from "./chat/ChatThinkingIndicator";
 import EmptyState from "./ui/EmptyState";
 import PrimaryButton from "./ui/PrimaryButton";
-import { btnInteractive, inputFieldClass, panelHeadingClass, panelSubtextClass, raisedFieldClass } from "@/lib/ui/styles";
+import { btnInteractive, inputFieldClass, panelHeadingClass, panelSubtextClass, raisedFieldClass, scrollAreaClass } from "@/lib/ui/styles";
 
 type InputMode = "paste" | "pdf";
 
@@ -246,7 +246,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
             </button>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto pr-0 sm:pr-1">
+          <div className={`${scrollAreaClass} pr-0 sm:pr-1`}>
             <div className="flex flex-col gap-3 pb-2">
               {messages.length === 0 && (
                 <EmptyState

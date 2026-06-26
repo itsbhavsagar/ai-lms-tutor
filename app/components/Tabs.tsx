@@ -9,6 +9,14 @@ import {
   RiUserVoiceLine,
 } from "react-icons/ri";
 import { WORKFLOW_STEPS } from "@/lib/learning/journey";
+import {
+  tabBtnActiveClass,
+  tabBtnClass,
+  tabBtnInactiveClass,
+  tabIndicatorClass,
+  tabsScrollClass,
+  tabsScrollClipClass,
+} from "@/lib/ui/styles";
 
 export type TabType =
   | "learn"
@@ -62,8 +70,8 @@ export default function Tabs({
   return (
     <div className="-mx-4 min-w-0 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
       <div className="flex min-w-0 items-center gap-2">
-        <div className="min-w-0 flex-1 overflow-x-auto">
-          <div className="flex min-w-max items-center gap-1">
+        <div className={tabsScrollClipClass}>
+          <div className={`${tabsScrollClass} flex min-w-max items-center gap-1`}>
         {TABS.map(({ id, label, Icon }) => {
           const active = showActiveIndicator && activeTab === id;
           const isFirstUtility = id === "notes";
@@ -72,15 +80,15 @@ export default function Tabs({
             <button
               key={id}
               onClick={() => onChange(id)}
-              className={`relative flex items-center gap-1.5 px-3 py-3 text-[13px] font-medium whitespace-nowrap transition-colors duration-200 ${
-                active ? "text-ink" : "text-muted"
+              className={`${tabBtnClass} ${
+                active ? tabBtnActiveClass : tabBtnInactiveClass
               } ${isFirstUtility ? "ml-1 border-l border-border-strong pl-4 sm:ml-2" : ""}`}
             >
               <Icon size={14} />
               <span>{label}</span>
               <span
-                className={`absolute right-0 bottom-0 left-0 h-0.5 origin-center rounded-t-full transition-transform duration-220 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                  active ? "scale-x-100 bg-accent" : "scale-x-0 bg-transparent"
+                className={`${tabIndicatorClass} ${
+                  active ? "scale-x-100" : "scale-x-0 bg-transparent"
                 }`}
               />
             </button>

@@ -27,7 +27,7 @@ export default function EmptyState({
         compact ? "py-6" : "py-10 sm:py-14"
       } ${fill ? "min-h-0 flex-1" : ""} ${className}`}
     >
-      <div className="empty-state-icon flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+      <div className="empty-state-icon flex h-12 w-12 items-center justify-center rounded-2xl">
         {icon}
       </div>
       <div className="max-w-sm space-y-1.5">
