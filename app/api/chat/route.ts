@@ -1,15 +1,35 @@
 import { getLessonById } from "@/lib/curriculum";
-import { chatWithContext } from "@/lib/ai/chat";
+import {
+  chatWithoutDatabase,
+  chatWithContext,
+  type ClientChatMessage,
+} from "@/lib/ai/chat";
 import {
   buildLearnerProfileSafe,
   emptyLearnerProfile,
 } from "@/lib/db/learner-profile";
+import { isEphemeralSessionId } from "@/lib/db/ephemeral-session";
 import { validateChatRequest } from "@/lib/utils/validation";
 import { jsonApiError } from "@/lib/utils/apiError";
 import {
   RATE_LIMITS,
   createRateLimitResponse,
 } from "@/lib/middleware/rateLimit";
+
+function parseClientMessages(body: unknown): ClientChatMessage[] {
+  if (!body || typeof body !== "object") return [];
+  const messages = (body as { messages?: unknown }).messages;
+  if (!Array.isArray(messages)) return [];
+
+  return messages.filter(
+    (m): m is ClientChatMessage =>
+      typeof m === "object" &&
+      m !== null &&
+      (m.role === "user" || m.role === "assistant") &&
+      typeof m.content === "string" &&
+      m.content.trim().length > 0,
+  );
+}
 
 export async function POST(req: Request) {
   try {
@@ -53,13 +73,24 @@ export async function POST(req: Request) {
       ? await buildLearnerProfileSafe(userId, lessonId)
       : emptyLearnerProfile();
 
+    const clientMessages = parseClientMessages(body);
+
     try {
-      const chatResponse = await chatWithContext(
-        sessionId,
-        userMessage,
-        lesson,
-        profile,
-      );
+      const chatResponse = isEphemeralSessionId(sessionId)
+        ? await chatWithoutDatabase(
+            userMessage,
+            clientMessages,
+            lesson,
+            profile,
+          )
+        : await chatWithContext(
+            sessionId,
+            userMessage,
+            lesson,
+            profile,
+            {},
+            clientMessages,
+          );
 
       const encoder = new TextEncoder();
 

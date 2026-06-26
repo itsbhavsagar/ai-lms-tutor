@@ -1,4 +1,9 @@
 import { prisma } from "./prisma";
+import { isDatabaseConnectionError } from "./db-error";
+import {
+  createEphemeralSession,
+  isEphemeralSessionId,
+} from "./ephemeral-session";
 
 export async function createSession(
   userId: string,
@@ -27,29 +32,34 @@ export async function createSession(
 
     return session;
   } catch (error) {
+    if (isDatabaseConnectionError(error)) {
+      console.error("[Session] DB unavailable, returning ephemeral session:", error);
+      return createEphemeralSession(userId, lessonId, title);
+    }
     console.error("🔥 Prisma createSession error:", error);
     throw error;
   }
 }
 
 export async function getUserSessions(userId: string, lessonId?: string) {
-  const sessions = await prisma.session.findMany({
-    where: {
-      userId,
-      ...(lessonId ? { lessonId } : {}),
-    },
-    orderBy: { updatedAt: "desc" },
-    include: {
-      messages: {
-        where: { role: "user" },
-        orderBy: { createdAt: "asc" },
-        take: 1,
+  try {
+    const sessions = await prisma.session.findMany({
+      where: {
+        userId,
+        ...(lessonId ? { lessonId } : {}),
       },
-      _count: { select: { messages: true } },
-    },
-  });
+      orderBy: { updatedAt: "desc" },
+      include: {
+        messages: {
+          where: { role: "user" },
+          orderBy: { createdAt: "asc" },
+          take: 1,
+        },
+        _count: { select: { messages: true } },
+      },
+    });
 
-  return sessions.map((session) => ({
+    return sessions.map((session) => ({
     id: session.id,
     lessonId: session.lessonId,
     title: session.title,
@@ -57,10 +67,21 @@ export async function getUserSessions(userId: string, lessonId?: string) {
     updatedAt: session.updatedAt,
     messageCount: session._count.messages,
     preview: session.messages[0]?.content ?? null,
-  }));
+    }));
+  } catch (error) {
+    if (isDatabaseConnectionError(error)) {
+      console.error("[Session] DB unavailable, returning empty session list:", error);
+      return [];
+    }
+    throw error;
+  }
 }
 
 export async function deleteSession(sessionId: string) {
+  if (isEphemeralSessionId(sessionId)) {
+    return null;
+  }
+
   const existing = await prisma.session.findUnique({
     where: { id: sessionId },
     select: { id: true },

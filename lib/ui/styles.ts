@@ -3,8 +3,6 @@ export const btnInteractive =
 
 export const btnPrimaryClass = `${btnInteractive} inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-semibold`;
 
-export const btnSecondaryClass = `${btnInteractive} inline-flex items-center justify-center gap-1.5 rounded-xl border px-4 py-2.5 text-[13px] font-medium`;
-
 export const btnGhostClass = `${btnInteractive} inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-1 text-[12px] font-medium hover:opacity-80`;
 
 export const cardClass =

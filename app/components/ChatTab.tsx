@@ -1,6 +1,14 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+  useSyncExternalStore,
+} from "react";
+import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Lesson } from "../data/lessons";
 import type { ChatMessage } from "../types/chat";
@@ -21,28 +29,30 @@ import {
 } from "@/lib/hooks/queries/useSessions";
 import { useTranscribeMutation } from "@/lib/hooks/queries/useTranscribe";
 import { sessionPreviewText } from "@/lib/chat/format";
-import { chatBtnClass } from "@/lib/chat/interactive";
 import {
   persistLessonSessionId,
-  readLessonSessionId,
   clearLessonSessionId,
 } from "@/lib/chat/sessionStorage";
+import {
+  clearCachedChatMessages,
+  persistCachedChatMessages,
+  persistCachedSessions,
+  readCachedChatMessages,
+  readCachedSessions,
+  removeCachedSession,
+} from "@/lib/chat/chatCache";
+import { usePersistedLessonSessionId } from "@/lib/hooks/usePersistedLessonSessionId";
 import { queryKeys } from "@/lib/query/keys";
-import ChatEmptyState from "./chat/ChatEmptyState";
-import ChatSidebar, {
+import { useLessonWorkflowProgress } from "@/lib/hooks/useLessonWorkflowProgress";
+import ChatComposer from "./chat/ChatComposer";
+import ChatHistoryToolbar, {
+  ChatHistoryDrawerLayer,
+} from "./chat/ChatHistoryControls";
+import {
   confirmDeleteSession,
   dismissDeleteSessionToast,
-} from "./chat/ChatSidebar";
-import ChatMessageBubble from "./chat/ChatMessageBubble";
-import LoadingIndicator from "./ui/LoadingIndicator";
-import { SkeletonChatHistory } from "./ui/Skeleton";
-import {
-  RiSendPlane2Line,
-  RiMicLine,
-  RiStopCircleLine,
-  RiMenuLine,
-  RiAddLine,
-} from "react-icons/ri";
+} from "./chat/ChatHistoryDrawer";
+import ChatMessagesPanel from "./chat/ChatMessagesPanel";
 
 const PLACEHOLDER_SUFFIX = "…";
 const SEND_LABEL = "Send";
@@ -53,7 +63,22 @@ const MIC_DENIED_MSG = "Microphone access denied.";
 
 type StreamPhase = "idle" | "thinking" | "streaming";
 
-export default function ChatTab({ lesson }: { lesson: Lesson }) {
+function useIsClientReady(): boolean {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+}
+
+export default function ChatTab({
+  lesson,
+  headerActionsEl = null,
+}: {
+  lesson: Lesson;
+  headerActionsEl?: HTMLElement | null;
+}) {
+  const isClientReady = useIsClientReady();
   const userId = useUserId();
   const queryClient = useQueryClient();
   const { mutateAsync: createSessionAsync } = useCreateSessionMutation(
@@ -63,6 +88,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   const { data: sessionsData, isSuccess: sessionsLoaded } =
     useSessionsQuery(lesson.id);
   const deleteSessionMutation = useDeleteSessionMutation(lesson.id);
+  const persistedSessionId = usePersistedLessonSessionId(lesson.id);
 
   const [messagesOverride, setMessagesOverride] = useState<
     ChatMessage[] | null
@@ -77,30 +103,49 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
   const [sessionIdOverride, setSessionIdOverride] = useState<
     string | null | undefined
   >(undefined);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
 
-  const sessions = sessionsData?.sessions ?? [];
+  const sessions = useMemo(() => {
+    if (!userId) return [];
+    if (sessionsLoaded && sessionsData?.sessions) {
+      return sessionsData.sessions;
+    }
+    return readCachedSessions(userId, lesson.id);
+  }, [userId, sessionsLoaded, sessionsData?.sessions, lesson.id]);
+
   const savedSessions = sessions.filter((session) => session.messageCount > 0);
+
+  const displaySavedSessions = useMemo(() => {
+    if (sessionsLoaded) return savedSessions;
+    if (!userId) return [];
+    return readCachedSessions(userId, lesson.id).filter(
+      (session) => session.messageCount > 0,
+    );
+  }, [userId, lesson.id, savedSessions, sessionsLoaded]);
   const sessionIdsKey = savedSessions.map((session) => session.id).join(",");
 
   const restoredSessionId = useMemo(() => {
     if (!sessionsLoaded || !sessionIdsKey) return null;
-    const savedId = readLessonSessionId(lesson.id);
-    if (!savedId || !sessionIdsKey.split(",").includes(savedId)) return null;
-    return savedId;
-  }, [sessionsLoaded, sessionIdsKey, lesson.id]);
+    if (!persistedSessionId || !sessionIdsKey.split(",").includes(persistedSessionId)) {
+      return null;
+    }
+    return persistedSessionId;
+  }, [sessionsLoaded, sessionIdsKey, persistedSessionId]);
 
   useEffect(() => {
     if (!sessionsLoaded) return;
-    const savedId = readLessonSessionId(lesson.id);
-    if (!savedId) return;
-    if (!sessionIdsKey || !sessionIdsKey.split(",").includes(savedId)) {
+    if (!persistedSessionId) return;
+    if (!sessionIdsKey || !sessionIdsKey.split(",").includes(persistedSessionId)) {
       clearLessonSessionId(lesson.id);
     }
-  }, [sessionsLoaded, sessionIdsKey, lesson.id]);
+  }, [sessionsLoaded, sessionIdsKey, persistedSessionId, lesson.id]);
 
   const sessionId =
-    sessionIdOverride !== undefined ? sessionIdOverride : restoredSessionId;
+    sessionIdOverride !== undefined
+      ? sessionIdOverride
+      : sessionsLoaded
+        ? restoredSessionId
+        : persistedSessionId;
 
   const setSessionId = useCallback((id: string | null) => {
     setSessionIdOverride(id);
@@ -114,12 +159,32 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     return flattenMessages(messagesQuery.data);
   }, [sessionId, messagesQuery.data, messagesQuery.isSuccess]);
 
-  const messages = messagesOverride ?? queryMessages;
+  const cachedMessages = useMemo(
+    () => (sessionId ? readCachedChatMessages(sessionId) : []),
+    [sessionId],
+  );
+
+  const messages =
+    messagesOverride !== null
+      ? messagesOverride
+      : queryMessages.length > 0
+        ? queryMessages
+        : cachedMessages;
+
+  useEffect(() => {
+    if (!userId || !sessionsData?.sessions) return;
+    persistCachedSessions(userId, lesson.id, sessionsData.sessions);
+  }, [userId, lesson.id, sessionsData?.sessions]);
+
+  useEffect(() => {
+    if (!sessionId || queryMessages.length === 0) return;
+    persistCachedChatMessages(sessionId, queryMessages);
+  }, [sessionId, queryMessages]);
 
   const setMessages = useCallback(
     (updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
       setMessagesOverride((prevOverride) => {
-        const base = prevOverride ?? queryMessages;
+        const base = prevOverride !== null ? prevOverride : queryMessages;
         return typeof updater === "function" ? updater(base) : updater;
       });
     },
@@ -147,14 +212,34 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
 
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
+  const isExplicitNewChat = sessionIdOverride === null;
+
   const isLoadingHistory =
     !!sessionId &&
     messages.length === 0 &&
     !loading &&
     (messagesQuery.isLoading || messagesQuery.isFetching);
 
+  const isPendingSavedChat =
+    !!sessionId &&
+    !!persistedSessionId &&
+    !isExplicitNewChat &&
+    messages.length === 0 &&
+    !loading &&
+    streamPhase === "idle" &&
+    isLoadingHistory;
+
+  const showChatContentLoader =
+    (isLoadingHistory || isPendingSavedChat) && messages.length === 0;
+
   const showEmptyState =
-    !sessionId && !loading && streamPhase === "idle" && !isLoadingHistory;
+    isClientReady &&
+    !showChatContentLoader &&
+    !loading &&
+    streamPhase === "idle" &&
+    messages.length === 0 &&
+    (isExplicitNewChat ||
+      (!sessionId && !persistedSessionId && !isLoadingHistory));
 
   useEffect(() => {
     if (!shouldAutoScroll) return;
@@ -207,9 +292,8 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     setInput("");
     setStreamPhase("idle");
     setShouldAutoScroll(true);
-    clearLessonSessionId(lesson.id);
-    setSidebarOpen(false);
-  }, [lesson.id]);
+    setHistoryDrawerOpen(false);
+  }, []);
 
   const performDeleteSession = useCallback(
     (targetSessionId: string) => {
@@ -225,6 +309,10 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
       deleteSessionMutation.mutate(targetSessionId, {
         onSuccess: () => {
           showSuccess("Chat deleted");
+          clearCachedChatMessages(targetSessionId);
+          if (userId) {
+            removeCachedSession(userId, lesson.id, targetSessionId);
+          }
           if (sessionId === targetSessionId) {
             setSessionIdOverride(null);
             setMessagesOverride([]);
@@ -234,7 +322,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
         },
       });
     },
-    [deleteSessionMutation, sessionId, lesson.id],
+    [deleteSessionMutation, sessionId, lesson.id, userId],
   );
 
   const handleDeleteSession = useCallback(
@@ -416,7 +504,8 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
         queryKey: queryKeys.messages(currentSessionId),
       });
       updateMessagesCache(finalMessages);
-      setMessagesOverride(null);
+      setMessagesOverride(finalMessages);
+      persistCachedChatMessages(currentSessionId, finalMessages);
       if (userId) {
         queryClient.invalidateQueries({
           queryKey: queryKeys.sessions(userId, lesson.id),
@@ -451,7 +540,7 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     setLoading(true);
     setStreamPhase("thinking");
     setShouldAutoScroll(true);
-    setMessages([...history, { role: "assistant", content: "" }]);
+    setMessagesOverride([...history, { role: "assistant", content: "" }]);
 
     let currentSessionId = sessionId;
     try {
@@ -461,14 +550,14 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     } catch {
       setLoading(false);
       setStreamPhase("idle");
-      setMessages(history);
+      setMessagesOverride(history);
       return;
     }
 
     if (!currentSessionId) {
       setLoading(false);
       setStreamPhase("idle");
-      setMessages(history);
+      setMessagesOverride(history);
       return;
     }
 
@@ -515,83 +604,86 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
     return -1;
   })();
 
-  const hasSavedChats = savedSessions.length > 0;
+  const showHistory =
+    displaySavedSessions.length >= 2 ||
+    (isExplicitNewChat && displaySavedSessions.length >= 1);
+  const showNewChat = displaySavedSessions.length >= 1;
+  const showToolbar = showHistory || showNewChat;
+  const lessonProgress = useLessonWorkflowProgress(
+    lesson.id,
+    userId,
+    displaySavedSessions.length > 0,
+  );
 
-  const sidebarCommonProps = {
-    sessions: savedSessions,
-    activeSessionId: sessionId,
-    onSelect: selectSession,
-    onNewChat: handleNewChat,
-    onDelete: handleDeleteSession,
-    deletingSessionId: deleteSessionMutation.isPending
-      ? (deleteSessionMutation.variables ?? null)
-      : null,
-    disabled: loading || !userId,
+  const historyCommonProps = useMemo(
+    () => ({
+      sessions: displaySavedSessions,
+      activeSessionId: sessionId,
+      progress: lessonProgress,
+      onSelect: selectSession,
+      onNewChat: handleNewChat,
+      onDelete: handleDeleteSession,
+      deletingSessionId: deleteSessionMutation.isPending
+        ? (deleteSessionMutation.variables ?? null)
+        : null,
+      disabled: loading || !userId,
+    }),
+    [
+      displaySavedSessions,
+      sessionId,
+      lessonProgress,
+      selectSession,
+      handleNewChat,
+      handleDeleteSession,
+      deleteSessionMutation.isPending,
+      deleteSessionMutation.variables,
+      loading,
+      userId,
+    ],
+  );
+
+  const composerProps = {
+    inputRef,
+    input,
+    onInputChange: setInput,
+    onSend: () => sendMessage(),
+    loading,
+    transcribing,
+    userId,
+    recording,
+    recordingSeconds,
+    showMicHint,
+    onShowMicHint: setShowMicHint,
+    onStartRecording: startRecording,
+    onStopRecording: stopRecording,
+    formatRecordingTime,
+    holdToRecordLabel: HOLD_TO_RECORD_LABEL,
+    releaseToStopLabel: RELEASE_TO_STOP_LABEL,
+    sendLabel: SEND_LABEL,
+    transcribingLabel: TRANSCRIBING_LABEL,
   };
 
   return (
-    <div className="flex min-h-0 flex-1 overflow-hidden">
-      {hasSavedChats && (
-        <ChatSidebar {...sidebarCommonProps} className="hidden md:flex" />
-      )}
-
-      {sidebarOpen && hasSavedChats && (
-        <>
-          <button
-            type="button"
-            aria-label="Close history"
-            className="fixed inset-0 z-40 bg-black/20 md:hidden"
-            onClick={() => setSidebarOpen(false)}
+    <div className="relative flex min-h-0 flex-1 overflow-hidden">
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        {headerActionsEl &&
+          showToolbar &&
+          createPortal(
+            <ChatHistoryToolbar
+              {...historyCommonProps}
+              drawerOpen={historyDrawerOpen}
+              onDrawerOpenChange={setHistoryDrawerOpen}
+              showHistory={showHistory}
+              showNewChat={showNewChat}
+            />,
+            headerActionsEl,
+          )}
+        {showHistory && (
+          <ChatHistoryDrawerLayer
+            {...historyCommonProps}
+            open={historyDrawerOpen}
+            onClose={() => setHistoryDrawerOpen(false)}
           />
-          <ChatSidebar
-            {...sidebarCommonProps}
-            className="fixed inset-y-0 left-0 z-50 w-64 shadow-lg md:hidden"
-            onClose={() => setSidebarOpen(false)}
-          />
-        </>
-      )}
-
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        {hasSavedChats && (
-        <div
-          className="flex flex-none items-center gap-2 border-b px-3 py-2 md:hidden"
-          style={{ borderColor: "var(--border)" }}
-        >
-          <button
-            type="button"
-            onClick={() => setSidebarOpen(true)}
-            className={`${chatBtnClass} flex h-8 w-8 items-center justify-center rounded-lg border hover:opacity-90`}
-            style={{
-              borderColor: "var(--border-strong)",
-              background: "var(--input-bg)",
-              color: "var(--text-muted)",
-            }}
-            aria-label="Open chat history"
-          >
-            <RiMenuLine size={16} />
-          </button>
-          <p
-            className="min-w-0 flex-1 truncate text-center text-[12px] font-medium"
-            style={{ color: "var(--text)" }}
-          >
-            {lesson.title}
-          </p>
-          <button
-            type="button"
-            onClick={handleNewChat}
-            disabled={loading || !userId}
-            className={`${chatBtnClass} flex h-8 w-8 items-center justify-center rounded-lg border hover:opacity-90`}
-            style={{
-              borderColor: "var(--border-strong)",
-              background: "var(--input-bg)",
-              color: "var(--text-muted)",
-              opacity: loading || !userId ? 0.5 : 1,
-            }}
-            aria-label="New chat"
-          >
-            <RiAddLine size={16} />
-          </button>
-        </div>
         )}
 
         <div className="flex min-h-0 flex-1 flex-col px-3 py-3 sm:px-4">
@@ -599,163 +691,34 @@ export default function ChatTab({ lesson }: { lesson: Lesson }) {
             ref={messagesContainerRef}
             className="min-h-0 flex-1 overflow-y-auto"
           >
-            <div className="flex w-full flex-col gap-3">
-          {loadingMore && (
-            <LoadingIndicator
-              label="Loading older messages…"
-              className="py-2"
+            <ChatMessagesPanel
+              lesson={lesson}
+              messages={messages}
+              lastAssistantIndex={lastAssistantIndex}
+              streamPhase={streamPhase}
+              loading={loading}
+              loadingMore={loadingMore}
+              showChatContentLoader={showChatContentLoader}
+              showEmptyState={showEmptyState}
+              onSelectSuggestion={sendMessage}
+              onRegenerate={handleRegenerate}
+              userId={userId}
             />
-          )}
-
-          {isLoadingHistory && <SkeletonChatHistory />}
-
-          {showEmptyState && (
-            <div className="flex w-full flex-col py-1">
-              <ChatEmptyState
-                lesson={lesson}
-                onSelectSuggestion={sendMessage}
-                disabled={loading || !userId}
-              />
-            </div>
-          )}
-
-          {messages.map((msg, i) => {
-            const isLastAssistant = i === lastAssistantIndex;
-            const isThinking =
-              isLastAssistant &&
-              streamPhase === "thinking" &&
-              msg.content === "";
-            const isStreaming =
-              isLastAssistant &&
-              streamPhase === "streaming" &&
-              msg.content !== "";
-
-            return (
-              <ChatMessageBubble
-                key={i}
-                message={msg}
-                isThinking={isThinking}
-                isStreaming={isStreaming}
-                canRegenerate={
-                  isLastAssistant &&
-                  !loading &&
-                  streamPhase === "idle" &&
-                  !!msg.content
-                }
-                onRegenerate={handleRegenerate}
-              />
-            );
-          })}
-            </div>
           </div>
 
           <div
             className="mt-3 w-full flex-none border-t pt-3"
             style={{ borderColor: "var(--border)" }}
           >
-            <div
-              className="chat-composer relative w-full rounded-xl border"
-              style={{
-                border: "1px solid var(--border-strong)",
-                background: "var(--input-bg)",
-              }}
-            >
-              <textarea
-                ref={inputRef}
-                rows={1}
-                className="chat-composer-field block min-h-11 max-h-40 w-full resize-none overflow-y-auto border-0 bg-transparent px-3 pt-2.5 pb-10 pr-18 text-[12px] leading-relaxed outline-none focus:outline-none focus-visible:outline-none"
-                style={{ color: "var(--text)" }}
-                value={transcribing ? TRANSCRIBING_LABEL : input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                  }
-                }}
-                placeholder={`Ask about ${lesson.title}${PLACEHOLDER_SUFFIX}`}
-                disabled={transcribing}
-              />
-
-              <div className="absolute right-2 bottom-2 flex items-center gap-1">
-                <div className="relative">
-                  <div
-                    className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 max-w-[calc(100vw-4rem)] -translate-x-1/2 rounded-lg px-2.5 py-1 text-center text-[11px] whitespace-normal transition-all duration-200 sm:max-w-none sm:whitespace-nowrap"
-                    style={{
-                      background: recording
-                        ? "var(--red-soft)"
-                        : "var(--accent-soft)",
-                      border: `1px solid ${recording ? "var(--red-border)" : "var(--accent-border)"}`,
-                      color: recording ? "var(--red)" : "var(--text)",
-                      opacity: recording || showMicHint ? 1 : 0,
-                      transform: `translateX(-50%) translateY(${recording || showMicHint ? "0px" : "4px"})`,
-                    }}
-                  >
-                    <span className="inline-flex items-center gap-1.5">
-                      {recording && (
-                        <span
-                          className="rec-pulse inline-block h-1.5 w-1.5 rounded-full"
-                          style={{ background: "var(--red)" }}
-                        />
-                      )}
-                      {recording
-                        ? `${RELEASE_TO_STOP_LABEL} • ${formatRecordingTime(recordingSeconds)}`
-                        : HOLD_TO_RECORD_LABEL}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onMouseDown={startRecording}
-                    onMouseUp={stopRecording}
-                    onMouseLeave={stopRecording}
-                    onMouseEnter={() => setShowMicHint(true)}
-                    onTouchStart={startRecording}
-                    onTouchEnd={stopRecording}
-                    onTouchCancel={stopRecording}
-                    onBlur={() => setShowMicHint(false)}
-                    onFocus={() => setShowMicHint(true)}
-                    aria-label={
-                      recording ? RELEASE_TO_STOP_LABEL : HOLD_TO_RECORD_LABEL
-                    }
-                    disabled={transcribing}
-                    className={`${chatBtnClass} flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:opacity-80`}
-                    style={{
-                      color: recording ? "var(--red)" : "var(--text-muted)",
-                      background: recording ? "var(--red-soft)" : "transparent",
-                      opacity: transcribing ? 0.5 : 1,
-                      cursor: transcribing ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    {recording ? (
-                      <RiStopCircleLine size={17} />
-                    ) : (
-                      <RiMicLine size={17} />
-                    )}
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => sendMessage()}
-                  disabled={loading || transcribing || !input.trim() || !userId}
-                  aria-label={SEND_LABEL}
-                  className={`${chatBtnClass} flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:opacity-90`}
-                  style={{
-                    background: "var(--accent)",
-                    color: "var(--on-accent)",
-                    opacity:
-                      loading || transcribing || !input.trim() ? 0.45 : 1,
-                    cursor:
-                      loading || transcribing || !input.trim()
-                        ? "not-allowed"
-                        : "pointer",
-                  }}
-                >
-                  <RiSendPlane2Line size={15} />
-                </button>
-              </div>
-            </div>
+            <ChatComposer
+              {...composerProps}
+              placeholder={
+                showEmptyState
+                  ? "Chat what you want to learn…"
+                  : `Ask about ${lesson.title}${PLACEHOLDER_SUFFIX}`
+              }
+              autoFocus={showEmptyState}
+            />
           </div>
         </div>
       </div>

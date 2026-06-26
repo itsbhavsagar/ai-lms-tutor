@@ -1,7 +1,8 @@
 "use client";
-import { lessons } from "./data/lessons";
+import { useState } from "react";
 import Tabs from "./components/Tabs";
 import ChatTab from "./components/ChatTab";
+import LessonTrackSidebar from "./components/LessonTrackSidebar";
 import QuizTab from "./components/QuizTab";
 import SummaryTab from "./components/SummaryTab";
 import NotesTab from "./components/NotesTab";
@@ -15,7 +16,7 @@ import { useRecruiterMode } from "@/lib/hooks/useRecruiterMode";
 
 const BRAND_NAME = "AI LMS Tutor";
 const BRAND_STACK = "Groq · Cohere · RAG";
-const LESSONS_LABEL = "Lessons";
+const TRACKS_LABEL = "Learning Tracks";
 const BUILT_BY =
   "Built by Bhavsagar · Next.js · Groq · Cohere · PostgresSQL · Prisma";
 
@@ -28,6 +29,8 @@ export default function Home() {
     isClientReady,
   } = useAppNavigation();
   const { enabled: recruiterMode, toggle: toggleRecruiterMode } = useRecruiterMode();
+  const [learnHeaderActionsEl, setLearnHeaderActionsEl] =
+    useState<HTMLDivElement | null>(null);
 
   return (
     <div className="flex h-full w-full min-w-0 flex-col overflow-hidden md:flex-row">
@@ -66,32 +69,15 @@ export default function Home() {
           className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-widest sm:px-5 md:text-[16px]"
           style={{ color: "var(--text-sidebar)", opacity: 0.5 }}
         >
-          {LESSONS_LABEL}
+          {TRACKS_LABEL}
         </p>
 
-        <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden px-4 pb-3 md:overflow-x-hidden md:overflow-y-auto md:px-3 md:pb-4">
-          <div className="flex gap-2 md:flex-col md:gap-0.5">
-            {lessons.map((lesson) => {
-              const active = selectedLesson.id === lesson.id;
-              return (
-                <button
-                  key={lesson.id}
-                  onClick={() => selectLesson(lesson)}
-                  className="min-w-44 flex-none rounded-lg px-3 py-2.5 text-left text-[13px] font-medium transition-colors duration-200 md:w-full md:min-w-0"
-                  style={{
-                    background: active
-                      ? "var(--bg-sidebar-active)"
-                      : "transparent",
-                    color: active
-                      ? "var(--text-sidebar-active)"
-                      : "var(--text-sidebar)",
-                  }}
-                >
-                  {lesson.title}
-                </button>
-              );
-            })}
-          </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 md:px-3 md:pb-4">
+          <LessonTrackSidebar
+            selectedLessonId={selectedLesson.id}
+            isClientReady={isClientReady}
+            onSelectLesson={selectLesson}
+          />
         </div>
 
         <div
@@ -119,9 +105,13 @@ export default function Home() {
             <div className="min-w-0 flex-1">
               <h1
                 className="truncate text-xl font-semibold leading-tight tracking-tight sm:text-[22px]"
-                style={{ fontFamily: "'Lora', serif", color: "var(--text)" }}
+                style={{ color: "var(--text)" }}
               >
-                {recruiterMode ? "Recruiter Demo" : selectedLesson.title}
+                {recruiterMode
+                  ? "Recruiter Demo"
+                  : isClientReady
+                    ? selectedLesson.title
+                    : "\u00A0"}
               </h1>
               <p
                 className="mt-1 max-w-3xl text-[12px] leading-relaxed sm:text-[13px]"
@@ -129,7 +119,9 @@ export default function Home() {
               >
                 {recruiterMode
                   ? "Engineering overview — prompts, streaming, TanStack Query cache, Prisma models."
-                  : selectedLesson.description}
+                  : isClientReady
+                    ? selectedLesson.description
+                    : "\u00A0"}
               </p>
             </div>
             <button
@@ -155,6 +147,14 @@ export default function Home() {
               activeTab={activeTab}
               onChange={handleTabChange}
               showActiveIndicator={isClientReady}
+              trailing={
+                activeTab === "learn" && isClientReady ? (
+                  <div
+                    ref={setLearnHeaderActionsEl}
+                    className="flex shrink-0 items-center gap-1.5"
+                  />
+                ) : undefined
+              }
             />
           )}
         </div>
@@ -174,10 +174,14 @@ export default function Home() {
           >
             {recruiterMode ? (
               <RecruiterDashboard lessonId={selectedLesson.id} />
-            ) : (
+            ) : !isClientReady ? null : (
               <>
                 {activeTab === "learn" && (
-                  <ChatTab key={selectedLesson.id} lesson={selectedLesson} />
+                  <ChatTab
+                    key={selectedLesson.id}
+                    lesson={selectedLesson}
+                    headerActionsEl={learnHeaderActionsEl}
+                  />
                 )}
                 {activeTab === "practice" && (
                   <QuizTab key={selectedLesson.id} lesson={selectedLesson} />

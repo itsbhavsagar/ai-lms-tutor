@@ -6,6 +6,7 @@ import {
 } from "@/lib/ai/prompts/practice";
 import { getLessonById } from "@/lib/curriculum";
 import { buildLearnerProfileSafe } from "@/lib/db/learner-profile";
+import { findLatestQuizWithAttempts } from "@/lib/db/quiz-attempt";
 import { prisma } from "@/lib/db/prisma";
 import { jsonApiError } from "@/lib/utils/apiError";
 
@@ -24,22 +25,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const quiz = await prisma.quiz.findFirst({
-      where: {
-        userId,
-        lessonId,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      include: {
-        attempts: {
-          orderBy: {
-            createdAt: "desc",
-          },
-        },
-      },
-    });
+    const quiz = await findLatestQuizWithAttempts(userId, lessonId);
 
     if (!quiz) {
       return Response.json({ quiz: null, attempts: [] });

@@ -1,5 +1,9 @@
-@import url("https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;1,400;1,500&display=swap");
 @import "tailwindcss";
+
+@theme {
+    --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
 
 :root {
     --bg: #f4f3ef;
@@ -31,9 +35,11 @@
     --selection-bg: #18181b;
     --selection-fg: #ffffff;
 
-    --green: #16a34a;
-    --green-soft: #dcfce7;
-    --green-border: #86efac;
+    --green: #00aa45;
+    --green-hover: #008838;
+    --green-soft: color-mix(in srgb, #00aa45 12%, white);
+    --green-border: color-mix(in srgb, #00aa45 32%, white);
+    --on-green: #ffffff;
 
     --red: #dc2626;
     --red-soft: #fee2e2;
@@ -59,7 +65,7 @@ body {
 }
 
 body {
-    font-family: "Sora", sans-serif;
+    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
     background: var(--bg);
     color: var(--text);
     -webkit-font-smoothing: antialiased;

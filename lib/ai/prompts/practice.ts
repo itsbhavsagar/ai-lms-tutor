@@ -3,7 +3,7 @@ import { formatLearnerProfile } from "@/lib/db/learner-profile";
 import { formatLessonContext } from "./lesson-context";
 import type { Lesson } from "@/lib/curriculum/types";
 
-export const QUIZ_JSON_SCHEMA = `[
+const QUIZ_JSON_SCHEMA = `[
   {
     "question": "Question text?",
     "checksConcept": "React.memo",

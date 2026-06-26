@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/prisma";
+import { createQuizAttempt } from "@/lib/db/quiz-attempt";
 import { jsonApiError } from "@/lib/utils/apiError";
 
 export async function POST(req: Request) {
@@ -17,13 +17,11 @@ export async function POST(req: Request) {
         ? weakConcepts.filter((c: unknown) => typeof c === "string")
         : [];
 
-    const attempt = await prisma.quizAttempt.create({
-      data: {
-        quizId,
-        score,
-        total,
-        weakConcepts: concepts,
-      },
+    const attempt = await createQuizAttempt({
+      quizId,
+      score,
+      total,
+      weakConcepts: concepts,
     });
 
     return Response.json({ attempt });

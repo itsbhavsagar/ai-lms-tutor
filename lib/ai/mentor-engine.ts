@@ -148,15 +148,15 @@ const CONFUSION_SIGNALS =
 
 const ENDING_GUIDE: Record<ResponseEnding, string> = {
   "teach-only":
-    "Deliver a complete mini-lesson. End on insight — NO question mark at the end. Do NOT ask 'which component' or 'what would you'.",
+    "One insight in ≤3 short sentences. End on the takeaway — NO question. No code blocks.",
   "socratic-question":
-    "End with ONE sharp question. Keep the teaching portion brief.",
+    "≤2 sentences of context, then ONE sharp question. Total under 100 words.",
   "challenge-wait":
-    "Pose a quick challenge (list items or scenario). Say 'Think before scrolling' or similar. Do NOT reveal the answer.",
+    "Quick scenario in 1–2 sentences. 'Think before scrolling.' No answer, no code.",
   "mini-quiz":
-    "End with A/B/C options only. Wait for their pick — do not grade yet unless they already answered.",
+    "Minimal setup (1 sentence), then A/B/C only.",
   "story-end":
-    "End with a production story or war story. No follow-up question — let it land.",
+    "One production anecdote in 2–3 sentences. No code, no follow-up question.",
 };
 
 const ENDING_CYCLE: ResponseEnding[] = [
@@ -174,25 +174,25 @@ const ENDING_CYCLE: ResponseEnding[] = [
 
 const STRATEGY_GUIDE: Record<TeachingStrategy, string> = {
   Explain:
-    "One crisp concept — teach fully. Personality in the opener. No corporate preamble.",
+    "One concept, ≤3 sentences. No 'As a Staff Engineer' opener.",
   Analogy:
-    "Memorable analogy with a punchy line (e.g. 'We don't optimize lap times—we optimize bundle size.'). Map to the lesson.",
+    "One punchy analogy line, one mapping to the lesson. Under 80 words.",
   Scenario:
-    "Real product scenario. Only add MCQ if ending requires it.",
+    "One product scenario in 2 sentences. MCQ only if ending requires it.",
   MiniQuiz:
-    "Sharp MCQ when ending is mini-quiz. Otherwise embed insight without quizzing.",
+    "1-sentence setup + A/B/C. No explanation until they answer.",
   Challenge:
-    "Bold edge case. Withhold answer when ending is challenge-wait.",
+    "One provocative line + the challenge. Under 60 words before the ask.",
   ProductionStory:
-    "How teams ship this — tradeoff, latency, cost. Can end without a question.",
+    "Name a real product + one tradeoff or failure mode. 2–3 sentences max. NO code samples.",
   DebugExercise:
-    "Symptom or short buggy snippet. Ask for root cause only if ending allows.",
+    "Only strategy allowed to show code — max 4 lines, then ask what's wrong.",
   InterviewMode:
-    "Probe like an interviewer — but only if ending is socratic-question. Otherwise teach an interview insight without quizzing.",
+    "One interview-style probe. No lecture.",
   ReverseQuestion:
-    "Ask what THEY think first — only when ending is challenge-wait or socratic-question.",
+    "Ask what they think first — 1–2 sentences max before the question.",
   ThinkFirst:
-    "Question before explanation — only when ending is challenge-wait.",
+    "Question first, withhold explanation unless ending is teach-only.",
 };
 
 const MODE_GUIDE: Record<MentorMode, string> = {
@@ -502,6 +502,7 @@ export function formatMentorTurnPlan(
     "",
     "## Variety rules",
     "- Do NOT ask a question every turn. Many turns should end on insight alone.",
+    "- **Hard length cap: ~120 words.** No class components, no multi-paragraph essays.",
     "- Do NOT open with 'Now imagine', 'Suppose', or 'Let's imagine' — use the assigned transition.",
     "- Vary structure: teach-only → story → challenge → teach-only → quiz.",
     `- BANNED: ${BANNED_PHRASES.slice(0, 12).map((p) => `"${p}"`).join(", ")}`,
@@ -511,4 +512,3 @@ export function formatMentorTurnPlan(
   ].join("\n");
 }
 
-export { isLikelyOnTopic, BANNED_PHRASES };

@@ -65,17 +65,6 @@ export function useCreateSessionMutation(lessonId?: string) {
   });
 }
 
-export function useInvalidateMessages(sessionId: string | null) {
-  const queryClient = useQueryClient();
-
-  return () => {
-    if (!sessionId) return;
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.messages(sessionId),
-    });
-  };
-}
-
 export function useUpdateMessagesCache(sessionId: string | null) {
   const queryClient = useQueryClient();
 

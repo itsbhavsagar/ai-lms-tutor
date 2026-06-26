@@ -81,7 +81,7 @@ export function isLikelyOnTopic(message: string, lesson: Lesson): boolean {
   return true;
 }
 
-export function countConsecutiveOffTopic(
+function countConsecutiveOffTopic(
   userMessages: string[],
   lesson: Lesson,
 ): number {

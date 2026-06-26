@@ -50,16 +50,20 @@ type Props = {
   activeTab: TabType;
   onChange: (tab: TabType) => void;
   showActiveIndicator?: boolean;
+  trailing?: React.ReactNode;
 };
 
 export default function Tabs({
   activeTab,
   onChange,
   showActiveIndicator = true,
+  trailing,
 }: Props) {
   return (
-    <div className="-mx-4 min-w-0 overflow-x-auto px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
-      <div className="flex min-w-max items-center gap-1">
+    <div className="-mx-4 min-w-0 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
+      <div className="flex min-w-0 items-center gap-2">
+        <div className="min-w-0 flex-1 overflow-x-auto">
+          <div className="flex min-w-max items-center gap-1">
         {TABS.map(({ id, label, Icon }) => {
           const active = showActiveIndicator && activeTab === id;
           const isFirstUtility = id === "notes";
@@ -90,6 +94,9 @@ export default function Tabs({
             </button>
           );
         })}
+          </div>
+        </div>
+        {trailing}
       </div>
     </div>
   );

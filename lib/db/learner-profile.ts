@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/db/prisma";
 import { getLessonById } from "@/lib/curriculum";
 import { getKnowledgeNode } from "@/lib/curriculum/knowledge-graph";
+import {
+  findQuizAttemptsForProfile,
+} from "@/lib/db/quiz-attempt";
 
 export type LearnerProfile = {
   strongConcepts: string[];
@@ -43,20 +46,18 @@ export async function buildLearnerProfileSafe(
   }
 }
 
-export async function buildLearnerProfile(
+async function buildLearnerProfile(
   userId: string,
   lessonId: string,
 ): Promise<LearnerProfile> {
   const lesson = getLessonById(lessonId);
   const node = getKnowledgeNode(lessonId);
 
-  const [quiz, sessions, notes, allQuizzes] = await Promise.all([
+  const [quizRow, sessions, notes, allQuizRows] = await Promise.all([
     prisma.quiz.findFirst({
       where: { userId, lessonId },
       orderBy: { createdAt: "desc" },
-      include: {
-        attempts: { orderBy: { createdAt: "desc" }, take: 3 },
-      },
+      select: { id: true },
     }),
     prisma.session.findMany({
       where: { userId, lessonId },
@@ -74,22 +75,29 @@ export async function buildLearnerProfile(
     }),
     prisma.quiz.findMany({
       where: { userId },
-      include: {
-        attempts: { orderBy: { createdAt: "desc" }, take: 1 },
-      },
+      select: { id: true, lessonId: true },
     }),
   ]);
 
+  const quizAttempts = quizRow
+    ? await findQuizAttemptsForProfile(quizRow.id, 3)
+    : [];
+
+  const allQuizzes = await Promise.all(
+    allQuizRows.map(async (row) => ({
+      lessonId: row.lessonId,
+      attempts: await findQuizAttemptsForProfile(row.id, 1),
+    })),
+  );
+
   const weakFromAttempts = new Set<string>();
-  if (quiz?.attempts) {
-    for (const attempt of quiz.attempts) {
-      for (const c of attempt.weakConcepts) {
-        weakFromAttempts.add(c);
-      }
+  for (const attempt of quizAttempts) {
+    for (const c of attempt.weakConcepts) {
+      weakFromAttempts.add(c);
     }
   }
 
-  const latestAttempt = quiz?.attempts[0];
+  const latestAttempt = quizAttempts[0];
   const recentQuizScore =
     latestAttempt
       ? `${latestAttempt.score}/${latestAttempt.total}`

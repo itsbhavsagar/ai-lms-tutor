@@ -11,7 +11,7 @@ export default function AppToaster() {
       closeButton
       toastOptions={{
         style: {
-          fontFamily: '"Sora", sans-serif',
+          fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
           fontSize: "13px",
         },
       }}

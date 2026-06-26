@@ -4,7 +4,7 @@ import { formatLessonContext } from "./lesson-context";
 import type { Lesson } from "@/lib/curriculum/types";
 import { getGraphRevisionHint } from "@/lib/learning/recommendations";
 
-export const REVIEW_JSON_SCHEMA = `{
+const REVIEW_JSON_SCHEMA = `{
   "understood": ["concept the learner likely grasps"],
   "struggled": ["concept they missed or need work on"],
   "suggestedRevision": "specific topic to revisit",

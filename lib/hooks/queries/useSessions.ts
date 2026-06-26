@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteSession, fetchSessions } from "@/lib/api/sessions";
+import { removeCachedSession } from "@/lib/chat/chatCache";
 import { useUserId } from "@/lib/hooks/useUserId";
 import { queryKeys } from "@/lib/query/keys";
 
@@ -28,6 +29,7 @@ export function useDeleteSessionMutation(lessonId: string) {
         (old) => {
           if (!old) return old;
           const sessions = old.sessions.filter((s) => s.id !== sessionId);
+          removeCachedSession(userId, lessonId, sessionId);
           return { sessions, count: sessions.length };
         },
       );

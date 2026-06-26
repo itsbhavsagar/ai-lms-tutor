@@ -33,43 +33,6 @@ export function validateChatRequest(body: unknown): {
   };
 }
 
-export function validatePdfUpload(formData: FormData): {
-  file: File;
-  userId: string;
-  lessonId: string;
-} {
-  const file = formData.get("file");
-  const userId = formData.get("userId");
-  const lessonId = formData.get("lessonId");
-
-  if (!(file instanceof File)) {
-    throw new ValidationError("File must be provided");
-  }
-
-  if (!file.type.includes("pdf")) {
-    throw new ValidationError("File must be a PDF");
-  }
-
-  if (file.size > 50 * 1024 * 1024) {
-    // 50MB limit
-    throw new ValidationError("File must be smaller than 50MB");
-  }
-
-  if (typeof userId !== "string" || userId.trim().length === 0) {
-    throw new ValidationError("UserId must be provided");
-  }
-
-  if (typeof lessonId !== "string" || lessonId.trim().length === 0) {
-    throw new ValidationError("LessonId must be provided");
-  }
-
-  return {
-    file,
-    userId: userId.trim(),
-    lessonId: lessonId.trim(),
-  };
-}
-
 export function validateSessionRequest(body: unknown): {
   userId: string;
   lessonId: string;

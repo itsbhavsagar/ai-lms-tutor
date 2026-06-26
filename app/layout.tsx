@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { GeistMono } from "geist/font/mono";
+import { GeistSans } from "geist/font/sans";
 import Providers from "./providers";
 import "./globals.css";
 
@@ -19,9 +21,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full" suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`h-full ${GeistSans.variable} ${GeistMono.variable}`}
+      suppressHydrationWarning
+    >
       <body
-        className="h-dvh overflow-hidden antialiased"
+        className={`${GeistSans.className} h-dvh overflow-hidden antialiased`}
         suppressHydrationWarning
       >
         <Providers>

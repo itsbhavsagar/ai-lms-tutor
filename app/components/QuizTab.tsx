@@ -221,7 +221,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
         >
           <p
             className="mb-1 text-4xl font-bold sm:text-5xl"
-            style={{ fontFamily: "'Lora', serif", color: "var(--text)" }}
+            style={{ color: "var(--text)" }}
           >
             {pct}%
           </p>

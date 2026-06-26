@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/db/prisma";
 import type { QuizPerformanceContext } from "@/lib/ai/prompts/lesson-context";
+import { findLatestQuizWithAttempts } from "@/lib/db/quiz-attempt";
 
 const EMPTY_QUIZ_PERFORMANCE: QuizPerformanceContext = {
   attemptCount: 0,
@@ -20,17 +20,11 @@ export async function getQuizPerformanceSafe(
   }
 }
 
-export async function getQuizPerformance(
+async function getQuizPerformance(
   userId: string,
   lessonId: string,
 ): Promise<QuizPerformanceContext> {
-  const quiz = await prisma.quiz.findFirst({
-    where: { userId, lessonId },
-    orderBy: { createdAt: "desc" },
-    include: {
-      attempts: { orderBy: { createdAt: "desc" } },
-    },
-  });
+  const quiz = await findLatestQuizWithAttempts(userId, lessonId);
 
   if (!quiz || quiz.attempts.length === 0) {
     return {

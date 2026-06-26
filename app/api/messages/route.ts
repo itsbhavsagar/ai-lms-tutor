@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { isEphemeralSessionId } from "@/lib/db/ephemeral-session";
 
 const PAGE_SIZE = 5;
 
@@ -9,6 +10,10 @@ export async function GET(req: Request) {
 
   if (!sessionId) {
     return Response.json({ error: "sessionId required" }, { status: 400 });
+  }
+
+  if (isEphemeralSessionId(sessionId)) {
+    return Response.json({ messages: [], nextCursor: null });
   }
 
   let messages;

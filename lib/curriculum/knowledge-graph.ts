@@ -1,11 +1,11 @@
-export type KnowledgeNode = {
+type KnowledgeNode = {
   lessonId: string;
   conceptChain: string[];
   prerequisiteLessonIds: string[];
 };
 
 /** Concept chains — weaker downstream concepts imply revisiting upstream lessons. */
-export const KNOWLEDGE_NODES: Record<string, KnowledgeNode> = {
+const KNOWLEDGE_NODES: Record<string, KnowledgeNode> = {
   "prompt-engineering": {
     lessonId: "prompt-engineering",
     conceptChain: ["LLMs", "Prompts", "Few-shot", "Chain-of-thought", "Guardrails"],

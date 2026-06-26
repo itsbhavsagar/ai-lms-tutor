@@ -10,6 +10,7 @@ export const tracks: Track[] = [
 export const lessons: Lesson[] = [
   {
     id: "prompt-engineering",
+    trackId: "ai-engineering",
     title: "Prompt Engineering",
     description:
       "Design reliable prompts for production LLM features — structure, few-shot, chain-of-thought, and guardrails.",
@@ -46,6 +47,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "rag",
+    trackId: "ai-engineering",
     title: "Retrieval Augmented Generation",
     description:
       "Ground LLM responses in private data via chunking, embedding, retrieval, and citation.",
@@ -81,6 +83,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "embeddings",
+    trackId: "ai-engineering",
     title: "Embeddings & Vector Search",
     description:
       "Semantic search with embedding models, similarity metrics, and vector indexes.",
@@ -114,6 +117,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "ai-agents",
+    trackId: "ai-engineering",
     title: "AI Agents & Tool Use",
     description:
       "Autonomous loops with tool calling, planning, memory, and production guardrails.",
@@ -147,6 +151,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "react-fundamentals",
+    trackId: "frontend",
     title: "React Fundamentals",
     description:
       "Components, state, hooks, and rendering — the foundation of modern UI engineering.",
@@ -181,6 +186,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "nextjs-app-router",
+    trackId: "frontend",
     title: "Next.js App Router",
     description:
       "Server Components, layouts, streaming, and server/client boundaries in Next.js.",
@@ -214,6 +220,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "tanstack-query",
+    trackId: "frontend",
     title: "TanStack Query",
     description:
       "Server state caching, mutations, optimistic updates, and cache invalidation patterns.",
@@ -247,6 +254,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "react-performance",
+    trackId: "frontend",
     title: "React Performance",
     description:
       "Profiling, memoization, virtualization, and concurrent features for fast UIs.",
@@ -282,6 +290,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "rest-api-design",
+    trackId: "backend",
     title: "REST API Design",
     description:
       "Resource-oriented APIs, HTTP semantics, versioning, pagination, and error contracts.",
@@ -316,6 +325,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "authentication",
+    trackId: "backend",
     title: "Authentication",
     description:
       "Sessions, JWTs, OAuth, and secure credential handling in production systems.",
@@ -350,6 +360,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "postgresql",
+    trackId: "backend",
     title: "PostgreSQL",
     description:
       "Schema design, indexing, query optimization, migrations, and scaling reads.",
@@ -385,6 +396,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "system-design-fundamentals",
+    trackId: "system-design",
     title: "System Design Fundamentals",
     description:
       "Scaling patterns, CAP tradeoffs, load balancing, caching, and reliability basics.",
@@ -420,6 +432,7 @@ export const lessons: Lesson[] = [
   },
   {
     id: "observability",
+    trackId: "system-design",
     title: "Observability",
     description:
       "Logs, metrics, traces, SLOs, and alerting for production systems.",
