@@ -706,10 +706,7 @@ export default function ChatTab({
             />
           </div>
 
-          <div
-            className="mt-3 w-full flex-none border-t pt-3"
-            style={{ borderColor: "var(--border)" }}
-          >
+          <div className="mt-3 w-full flex-none border-t border-border pt-3">
             <ChatComposer
               {...composerProps}
               placeholder={

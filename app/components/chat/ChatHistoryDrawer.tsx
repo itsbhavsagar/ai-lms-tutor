@@ -18,6 +18,7 @@ import {
   RiCloseLine,
   RiDeleteBinLine,
 } from "react-icons/ri";
+import { btnOutlineClass } from "@/lib/ui/styles";
 
 export type ChatHistorySessionProps = {
   sessions: SessionSummary[];
@@ -55,53 +56,33 @@ function ChatHistoryDrawer({
 
   return (
     <aside
-      className={`flex min-h-0 flex-col border-r shadow-lg ${className}`}
-      style={{
-        background: "var(--surface-raised)",
-        borderColor: "var(--border)",
-      }}
+      className={`flex min-h-0 flex-col border-r border-border bg-surface-raised shadow-lg ${className}`}
     >
-      <div
-        className="flex flex-none items-center gap-2 border-b px-4 py-3"
-        style={{ borderColor: "var(--border)" }}
-      >
+      <div className="flex flex-none items-center gap-2 border-b border-border px-4 py-3">
         <div className="min-w-0 flex-1">
-          <p
-            className="text-[13px] font-semibold tracking-tight"
-            style={{ color: "var(--text)" }}
-          >
+          <p className="text-[13px] font-semibold tracking-tight text-ink">
             Continue Learning
           </p>
-          <p
-            className="mt-0.5 text-[11px] leading-snug"
-            style={{ color: "var(--text-muted)" }}
-          >
+          <p className="mt-0.5 text-[11px] leading-snug text-muted">
             {formatWorkflowProgressLine(progress)}
           </p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className={`${chatBtnSubtleClass} flex h-8 w-8 shrink-0 items-center justify-center rounded-lg`}
-          style={{ color: "var(--text-muted)" }}
+          className={`${chatBtnSubtleClass} flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted`}
           aria-label="Close history"
         >
           <RiCloseLine size={18} />
         </button>
       </div>
 
-      <div className="flex flex-none border-b px-3 py-2.5" style={{ borderColor: "var(--border)" }}>
+      <div className="flex flex-none border-b border-border px-3 py-2.5">
         <button
           type="button"
           onClick={onNewChat}
           disabled={disabled}
-          className={`${chatBtnClass} flex w-full items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-[12px] font-medium hover:opacity-90`}
-          style={{
-            borderColor: "var(--border-strong)",
-            background: "var(--bg-panel)",
-            color: "var(--text)",
-            opacity: disabled ? 0.5 : 1,
-          }}
+          className={`${btnOutlineClass} ${chatBtnClass} flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[12px] hover:opacity-90 ${disabled ? "opacity-50" : ""}`}
         >
           <RiPencilLine size={14} />
           New chat
@@ -160,37 +141,30 @@ export const ChatHistorySessionRow = memo(function ChatHistorySessionRow({
 
   return (
     <div
-      className="group flex min-w-0 items-center gap-0.5 rounded-lg transition-colors hover:bg-(--border)/40"
-      style={{
-        background: active ? "var(--accent-soft)" : "transparent",
-      }}
+      className={`group flex min-w-0 items-center gap-0.5 rounded-lg transition-colors hover:bg-border/40 ${
+        active ? "bg-accent-soft" : "bg-transparent"
+      }`}
     >
       <button
         type="button"
         onClick={onSelect}
         disabled={isDeleting}
-        className={`${chatBtnSubtleClass} flex min-w-0 flex-1 flex-col items-start gap-0.5 px-2.5 py-2 text-left`}
-        style={{
-          color: active ? "var(--text)" : "var(--text-muted)",
-          opacity: isDeleting ? 0.5 : 1,
-        }}
+        className={`${chatBtnSubtleClass} flex min-w-0 flex-1 flex-col items-start gap-0.5 px-2.5 py-2 text-left ${
+          active ? "text-ink" : "text-muted"
+        } ${isDeleting ? "opacity-50" : ""}`}
       >
         <span className="flex min-w-0 w-full items-center gap-1.5">
           <span
-            className="h-1.5 w-1.5 shrink-0 rounded-full"
-            style={{
-              background: active ? "var(--green)" : "var(--border-strong)",
-            }}
+            className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+              active ? "bg-green" : "bg-border-strong"
+            }`}
             aria-hidden
           />
           <span className="truncate text-[12px] font-medium leading-snug">
             {label}
           </span>
         </span>
-        <span
-          className="pl-3.5 text-[10px] leading-snug"
-          style={{ color: "var(--text-muted)" }}
-        >
+        <span className="pl-3.5 text-[10px] leading-snug text-muted">
           {showMeta
             ? `${formatWorkflowSubtitle(progress)} · ${session.messageCount} messages · ${formatSessionRelativeTime(session.updatedAt)}`
             : formatWorkflowSubtitle(progress)}
@@ -201,12 +175,11 @@ export const ChatHistorySessionRow = memo(function ChatHistorySessionRow({
         type="button"
         onClick={onDelete}
         disabled={isDeleting || disabled}
-        className={`${chatBtnSubtleClass} mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${
+        className={`${chatBtnSubtleClass} mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-red ${
           deleteAlwaysVisible
             ? "opacity-100"
             : "opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
         }`}
-        style={{ color: "var(--red)" }}
         aria-label={`Delete ${label}`}
       >
         <RiDeleteBinLine size={14} />

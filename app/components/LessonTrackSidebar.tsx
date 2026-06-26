@@ -8,6 +8,12 @@ import {
   tracks,
   type Lesson,
 } from "@/lib/curriculum";
+import {
+  lessonDotActiveClass,
+  lessonDotInactiveClass,
+  lessonNavItemActiveClass,
+  lessonNavItemClass,
+} from "@/lib/ui/styles";
 
 type LessonTrackSidebarProps = {
   selectedLessonId: string;
@@ -58,8 +64,7 @@ export default function LessonTrackSidebar({
             <button
               type="button"
               onClick={() => toggleTrack(track.id)}
-              className="flex w-full min-w-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-semibold transition-colors duration-200 hover:bg-(--bg-sidebar-hover)"
-              style={{ color: "var(--text-sidebar-active)" }}
+              className="flex w-full min-w-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-semibold text-sidebar-text-active transition-colors duration-200 hover:bg-sidebar-hover"
               aria-expanded={isExpanded}
             >
               {isExpanded ? (
@@ -71,10 +76,7 @@ export default function LessonTrackSidebar({
             </button>
 
             {isExpanded && (
-              <div
-                className="mb-1 ml-2 flex flex-col gap-0.5 border-l py-0.5 pl-2"
-                style={{ borderColor: "var(--sidebar-border)" }}
-              >
+              <div className="mb-1 ml-2 flex flex-col gap-0.5 border-l border-sidebar-border py-0.5 pl-2">
                 {trackLessons.map((lesson) => {
                   const active =
                     isClientReady && selectedLessonId === lesson.id;
@@ -84,24 +86,10 @@ export default function LessonTrackSidebar({
                       key={lesson.id}
                       type="button"
                       onClick={() => handleSelectLesson(lesson)}
-                      className="flex min-w-0 items-start gap-2 rounded-lg px-2 py-2 text-left text-[12px] font-medium transition-colors duration-200"
-                      style={{
-                        background: active
-                          ? "var(--bg-sidebar-active)"
-                          : "transparent",
-                        color: active
-                          ? "var(--text-sidebar-active)"
-                          : "var(--text-sidebar)",
-                      }}
+                      className={`${lessonNavItemClass} ${active ? lessonNavItemActiveClass : ""}`}
                     >
                       <span
-                        className="mt-[7px] h-1 w-1 shrink-0 rounded-full"
-                        style={{
-                          background: active
-                            ? "var(--green)"
-                            : "var(--text-sidebar)",
-                          opacity: active ? 1 : 0.45,
-                        }}
+                        className={`mt-[7px] h-1 w-1 shrink-0 rounded-full ${active ? lessonDotActiveClass : lessonDotInactiveClass}`}
                         aria-hidden
                       />
                       <span className="min-w-0 leading-snug">{lesson.title}</span>

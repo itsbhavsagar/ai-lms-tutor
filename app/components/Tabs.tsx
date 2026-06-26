@@ -22,7 +22,7 @@ export type TabType =
 type TabDef = {
   id: TabType;
   label: string;
-  Icon: React.ComponentType<{ size?: number; color?: string }>;
+  Icon: React.ComponentType<{ size?: number; className?: string }>;
 };
 
 const WORKFLOW_TABS: TabDef[] = WORKFLOW_STEPS.map((step) => ({
@@ -73,23 +73,15 @@ export default function Tabs({
               key={id}
               onClick={() => onChange(id)}
               className={`relative flex items-center gap-1.5 px-3 py-3 text-[13px] font-medium whitespace-nowrap transition-colors duration-200 ${
-                isFirstUtility ? "ml-1 border-l pl-4 sm:ml-2" : ""
-              }`}
-              style={{
-                color: active ? "var(--text)" : "var(--text-muted)",
-                borderColor: isFirstUtility ? "var(--border-strong)" : undefined,
-              }}
+                active ? "text-ink" : "text-muted"
+              } ${isFirstUtility ? "ml-1 border-l border-border-strong pl-4 sm:ml-2" : ""}`}
             >
               <Icon size={14} />
               <span>{label}</span>
               <span
-                className="absolute right-0 bottom-0 left-0 h-0.5 rounded-t-full"
-                style={{
-                  background: active ? "var(--accent)" : "transparent",
-                  transform: active ? "scaleX(1)" : "scaleX(0)",
-                  transition: "transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)",
-                  transformOrigin: "center",
-                }}
+                className={`absolute right-0 bottom-0 left-0 h-0.5 origin-center rounded-t-full transition-transform duration-220 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  active ? "scale-x-100 bg-accent" : "scale-x-0 bg-transparent"
+                }`}
               />
             </button>
           );

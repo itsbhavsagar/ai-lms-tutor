@@ -25,17 +25,9 @@ export default function ChatEmptyState({
           type="button"
           disabled={disabled}
           onClick={() => onSelectSuggestion(item.prompt)}
-          className={`${btnInteractive} suggestion-chip group flex w-full items-center rounded-lg border px-3 py-2 text-left transition-colors hover:border-(--accent-border) hover:bg-(--bg-panel) disabled:opacity-50`}
-          style={{
-            background: "var(--surface-raised)",
-            borderColor: "var(--border)",
-            animationDelay: `${0.04 + i * 0.03}s`,
-          }}
+          className={`${btnInteractive} suggestion-chip group flex w-full items-center rounded-lg border border-border bg-surface-raised px-3 py-2 text-left transition-colors hover:border-accent-border hover:bg-panel disabled:opacity-50 [animation-delay:${0.04 + i * 0.03}s]`}
         >
-          <span
-            className="text-[11px] font-medium transition-colors group-hover:text-(--accent)"
-            style={{ color: "var(--text-muted)" }}
-          >
+          <span className="text-[11px] font-medium text-muted transition-colors group-hover:text-accent">
             {item.label}
           </span>
         </button>

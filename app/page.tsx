@@ -29,13 +29,7 @@ export default function Home() {
 
   return (
     <div className="flex h-full w-full min-w-0 flex-col overflow-hidden md:flex-row">
-      <aside
-        className="hidden h-full w-64 shrink-0 flex-col overflow-hidden md:flex lg:w-72"
-        style={{
-          background: "var(--bg-sidebar)",
-          borderRight: "1px solid var(--sidebar-border)",
-        }}
-      >
+      <aside className="hidden h-full w-64 shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar md:flex lg:w-72">
         <LessonSidebarPanel
           selectedLessonId={selectedLesson.id}
           isClientReady={isClientReady}
@@ -51,31 +45,19 @@ export default function Home() {
         onSelectLesson={selectLesson}
       />
 
-      <main
-        className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
-        style={{ background: "var(--bg)" }}
-      >
-        <div
-          className="flex flex-none flex-col border-b px-3 pt-3 sm:px-6 md:px-8 md:pt-6"
-          style={{ borderColor: "var(--border)" }}
-        >
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-canvas">
+        <div className="flex flex-none flex-col border-b border-border px-3 pt-3 sm:px-6 md:px-8 md:pt-6">
           <div className="mb-2 flex min-w-0 items-start gap-2 sm:gap-3">
             <MobileNavToggle onOpen={() => setMobileNavOpen(true)} />
             <div className="min-w-0 flex-1">
-              <h1
-                className="truncate text-lg font-semibold leading-tight tracking-tight sm:text-[22px]"
-                style={{ color: "var(--text)" }}
-              >
+              <h1 className="truncate text-lg font-semibold leading-tight tracking-tight text-ink sm:text-[22px]">
                 {recruiterMode
                   ? "Recruiter Demo"
                   : isClientReady
                     ? selectedLesson.title
                     : "\u00A0"}
               </h1>
-              <p
-                className="mt-1 line-clamp-2 max-w-3xl text-[12px] leading-relaxed sm:line-clamp-none sm:text-[13px]"
-                style={{ color: "var(--text-muted)" }}
-              >
+              <p className="mt-1 line-clamp-2 max-w-3xl text-[12px] leading-relaxed text-muted sm:line-clamp-none sm:text-[13px]">
                 {recruiterMode
                   ? "Engineering overview — prompts, streaming, TanStack Query cache, Prisma models."
                   : isClientReady
@@ -86,16 +68,11 @@ export default function Home() {
             <button
               type="button"
               onClick={toggleRecruiterMode}
-              className="shrink-0 rounded-lg border px-2.5 py-1.5 text-[10px] font-semibold sm:px-3 sm:text-[11px]"
-              style={{
-                borderColor: recruiterMode
-                  ? "var(--accent)"
-                  : "var(--border-strong)",
-                background: recruiterMode
-                  ? "var(--accent-soft)"
-                  : "var(--surface-raised)",
-                color: recruiterMode ? "var(--accent)" : "var(--text-muted)",
-              }}
+              className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-[10px] font-semibold sm:px-3 sm:text-[11px] ${
+                recruiterMode
+                  ? "border-accent bg-accent-soft text-accent"
+                  : "border-border-strong bg-surface-raised text-muted"
+              }`}
             >
               {recruiterMode ? "Exit demo" : "Recruiter demo"}
             </button>
@@ -120,16 +97,11 @@ export default function Home() {
 
         <div className="min-h-0 min-w-0 flex-1 overflow-hidden p-3 sm:p-4 md:p-6">
           <div
-            className={`flex h-full min-h-0 min-w-0 flex-col rounded-lg ${
+            className={`flex h-full min-h-0 min-w-0 flex-col rounded-lg border border-border bg-panel shadow-sm ${
               !recruiterMode && activeTab === "learn"
                 ? "overflow-hidden p-0"
                 : "p-3 sm:rounded-xl sm:p-4 md:p-6"
             }`}
-            style={{
-              background: "var(--bg-panel)",
-              border: "1px solid var(--border)",
-              boxShadow: "var(--shadow-sm)",
-            }}
           >
             {recruiterMode ? (
               <RecruiterDashboard lessonId={selectedLesson.id} />

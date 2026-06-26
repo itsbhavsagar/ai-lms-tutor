@@ -10,7 +10,6 @@ export default function PrimaryButton({
   children,
   fullWidth = false,
   className = "",
-  style,
   disabled,
   ...props
 }: PrimaryButtonProps) {
@@ -19,12 +18,6 @@ export default function PrimaryButton({
       type="button"
       disabled={disabled}
       className={`${btnPrimaryClass} ${fullWidth ? "w-full sm:w-auto" : ""} ${className}`}
-      style={{
-        background: "var(--accent)",
-        color: "var(--on-accent)",
-        opacity: disabled ? 0.5 : 1,
-        ...style,
-      }}
       {...props}
     >
       {children}

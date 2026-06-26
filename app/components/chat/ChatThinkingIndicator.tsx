@@ -14,10 +14,7 @@ export default function ChatThinkingIndicator({
         <span className="thinking-bar thinking-bar-2" />
         <span className="thinking-bar thinking-bar-3" />
       </span>
-      <span
-        className="thinking-shimmer text-[11px] font-medium tracking-wide"
-        style={{ color: "var(--text-muted)" }}
-      >
+      <span className="thinking-shimmer text-[11px] font-medium tracking-wide text-muted">
         {label}
       </span>
     </div>

@@ -34,10 +34,13 @@ import NoteCard from "./notes/NoteCard";
 import EmptyState from "./ui/EmptyState";
 import { SkeletonNoteGrid } from "./ui/Skeleton";
 import {
-  btnInteractive,
+  btnDangerClass,
+  btnOutlineClass,
+  btnPrimaryClass,
+  inputFieldClass,
   panelHeadingClass,
   panelSubtextClass,
-  plainFieldClass,
+  raisedFieldClass,
 } from "@/lib/ui/styles";
 
 const LABEL_NOTES = "Notes";
@@ -237,13 +240,7 @@ export default function NotesTab({ lesson }: NotesTabProps) {
       type="button"
       onClick={handleSave}
       disabled={!content.trim() || isSaving}
-      className={`${btnInteractive} flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[12px] font-semibold sm:gap-1.5 sm:rounded-xl sm:px-3 sm:py-2 sm:text-[13px]`}
-      style={{
-        background: "var(--accent)",
-        color: "var(--on-accent)",
-        opacity: content.trim() && !isSaving ? 1 : 0.4,
-        cursor: content.trim() && !isSaving ? "pointer" : "not-allowed",
-      }}
+      className={`${btnPrimaryClass} flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[12px] sm:gap-1.5 sm:rounded-xl sm:px-3 sm:py-2 sm:text-[13px] ${!content.trim() || isSaving ? "opacity-40" : ""}`}
     >
       <RiSaveLine size={13} className="hidden sm:block" />
       {isSaving ? "Saving…" : LABEL_SAVE}
@@ -254,12 +251,7 @@ export default function NotesTab({ lesson }: NotesTabProps) {
     <button
       type="button"
       onClick={handleCancelEdit}
-      className={`${btnInteractive} flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-[12px] font-medium sm:gap-1.5 sm:rounded-xl sm:px-3 sm:py-2 sm:text-[13px]`}
-      style={{
-        borderColor: "var(--border-strong)",
-        color: "var(--text)",
-        background: "var(--input-bg)",
-      }}
+      className={`${btnOutlineClass} flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[12px] sm:gap-1.5 sm:rounded-xl sm:px-3 sm:py-2 sm:text-[13px]`}
     >
       <RiCloseLine size={14} className="hidden sm:block" />
       {LABEL_CANCEL}
@@ -276,16 +268,10 @@ export default function NotesTab({ lesson }: NotesTabProps) {
         }`}
       >
         <div className="min-w-0 flex-1">
-          <h2
-            className={panelHeadingClass}
-            style={{ color: "var(--text)" }}
-          >
+          <h2 className={panelHeadingClass}>
             {LABEL_NOTES}
           </h2>
-          <p
-            className={`truncate ${panelSubtextClass}`}
-            style={{ color: "var(--text-muted)" }}
-          >
+          <p className={`truncate ${panelSubtextClass}`}>
             {lesson.title} · {noteCountLabel}
           </p>
         </div>
@@ -298,12 +284,7 @@ export default function NotesTab({ lesson }: NotesTabProps) {
             <button
               type="button"
               onClick={() => setLocked(false)}
-              className={`${btnInteractive} flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-[13px] font-medium`}
-              style={{
-                borderColor: "var(--border-strong)",
-                color: "var(--text)",
-                background: "var(--input-bg)",
-              }}
+              className={`${btnOutlineClass} flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-[13px]`}
             >
               <RiPencilLine size={13} />
               {LABEL_EDIT}
@@ -315,14 +296,7 @@ export default function NotesTab({ lesson }: NotesTabProps) {
               type="button"
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
-              className={`${btnInteractive} flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-[13px] font-medium`}
-              style={{
-                borderColor: "var(--red-border)",
-                color: "var(--red)",
-                background: "var(--red-soft)",
-                opacity: deleteMutation.isPending ? 0.4 : 1,
-                cursor: deleteMutation.isPending ? "not-allowed" : "pointer",
-              }}
+              className={`${btnDangerClass} flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] ${deleteMutation.isPending ? "opacity-40" : ""}`}
             >
               <RiDeleteBinLine size={13} />
               {LABEL_DELETE}
@@ -335,11 +309,7 @@ export default function NotesTab({ lesson }: NotesTabProps) {
             <button
               type="button"
               onClick={handleNewNote}
-              className={`${btnInteractive} flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-semibold`}
-              style={{
-                background: "var(--accent)",
-                color: "var(--on-accent)",
-              }}
+              className={`${btnPrimaryClass} flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-[13px]`}
             >
               <RiAddLine size={14} />
               {LABEL_NEW}
@@ -352,11 +322,7 @@ export default function NotesTab({ lesson }: NotesTabProps) {
             <button
               type="button"
               onClick={handleNewNote}
-              className={`${btnInteractive} flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[12px] font-semibold`}
-              style={{
-                background: "var(--accent)",
-                color: "var(--on-accent)",
-              }}
+              className={`${btnPrimaryClass} flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[12px]`}
             >
               <RiAddLine size={14} />
               {LABEL_NEW}
@@ -405,13 +371,11 @@ export default function NotesTab({ lesson }: NotesTabProps) {
                 <button
                   type="button"
                   onClick={resetEditor}
-                  className="flex min-w-0 items-center gap-1 text-[14px] font-semibold"
-                  style={{ color: "var(--text)" }}
+                  className="flex min-w-0 items-center gap-1 text-[14px] font-semibold text-ink"
                 >
                   <RiArrowLeftLine
                     size={16}
-                    className="shrink-0"
-                    style={{ color: "var(--accent)" }}
+                    className="shrink-0 text-accent"
                   />
                   <span className="truncate">{LABEL_NOTES}</span>
                 </button>
@@ -422,12 +386,7 @@ export default function NotesTab({ lesson }: NotesTabProps) {
                       <button
                         type="button"
                         onClick={() => setLocked(false)}
-                        className={`${btnInteractive} flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-[12px] font-medium`}
-                        style={{
-                          borderColor: "var(--border-strong)",
-                          color: "var(--text)",
-                          background: "var(--input-bg)",
-                        }}
+                        className={`${btnOutlineClass} flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[12px]`}
                       >
                         {LABEL_EDIT}
                       </button>
@@ -435,13 +394,7 @@ export default function NotesTab({ lesson }: NotesTabProps) {
                         type="button"
                         onClick={handleDelete}
                         disabled={deleteMutation.isPending}
-                        className={`${btnInteractive} flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-[12px] font-medium`}
-                        style={{
-                          borderColor: "var(--red-border)",
-                          color: "var(--red)",
-                          background: "var(--red-soft)",
-                          opacity: deleteMutation.isPending ? 0.4 : 1,
-                        }}
+                        className={`${btnDangerClass} flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[12px] ${deleteMutation.isPending ? "opacity-40" : ""}`}
                       >
                         {LABEL_DELETE}
                       </button>
@@ -460,10 +413,7 @@ export default function NotesTab({ lesson }: NotesTabProps) {
               <div className="flex min-h-0 flex-1 flex-col gap-3">
                 <div className="flex-none min-w-0">
                   {locked ? (
-                    <h3
-                      className="truncate text-[15px] font-semibold"
-                      style={{ color: "var(--text)" }}
-                    >
+                    <h3 className="truncate text-[15px] font-semibold text-ink">
                       {deriveNoteTitle(title, content)}
                     </h3>
                   ) : (
@@ -471,18 +421,10 @@ export default function NotesTab({ lesson }: NotesTabProps) {
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="Note title"
-                      className={`${plainFieldClass} w-full rounded-lg border px-3 py-2 text-[14px] font-semibold`}
-                      style={{
-                        background: "var(--input-bg)",
-                        borderColor: "var(--border-strong)",
-                        color: "var(--text)",
-                      }}
+                      className={`${inputFieldClass} w-full rounded-lg px-3 py-2 text-[14px] font-semibold`}
                     />
                   )}
-                  <p
-                    className="mt-0.5 text-[11px]"
-                    style={{ color: "var(--text-muted)" }}
-                  >
+                  <p className="mt-0.5 text-[11px] text-muted">
                     {dateLabel}
                     {dateLabel ? " · " : ""}
                     {wordCount} {LABEL_WORDS}
@@ -492,17 +434,8 @@ export default function NotesTab({ lesson }: NotesTabProps) {
 
                 <div className="min-h-0 flex-1 overflow-hidden">
                   {locked ? (
-                    <div
-                      className="h-full overflow-y-auto rounded-xl border p-4 sm:p-5"
-                      style={{
-                        background: "var(--surface-raised)",
-                        borderColor: "var(--border)",
-                      }}
-                    >
-                      <p
-                        className="whitespace-pre-wrap wrap-wrap-wrap-break-word text-[13px] leading-relaxed"
-                        style={{ color: "var(--text)" }}
-                      >
+                    <div className="h-full overflow-y-auto rounded-xl border border-border bg-surface-raised p-4 sm:p-5">
+                      <p className="whitespace-pre-wrap wrap-wrap-wrap-break-word text-[13px] leading-relaxed text-ink">
                         {content || "Empty note"}
                       </p>
                     </div>
@@ -512,12 +445,7 @@ export default function NotesTab({ lesson }: NotesTabProps) {
                       onChange={(e) => setContent(e.target.value)}
                       placeholder={PLACEHOLDER}
                       autoFocus
-                      className={`${plainFieldClass} h-full w-full min-w-0 resize-none rounded-xl border p-4 text-[13px] leading-relaxed sm:p-5`}
-                      style={{
-                        background: "var(--surface-raised)",
-                        borderColor: "var(--border-strong)",
-                        color: "var(--text)",
-                      }}
+                      className={`${raisedFieldClass} h-full w-full min-w-0 resize-none rounded-xl p-4 text-[13px] leading-relaxed sm:p-5`}
                     />
                   )}
                 </div>
@@ -528,8 +456,7 @@ export default function NotesTab({ lesson }: NotesTabProps) {
                 title="Select a note"
                 description={LABEL_SELECT_HINT}
                 fill
-                className="rounded-xl border border-dashed"
-                style={{ borderColor: "var(--border-strong)" }}
+                className="rounded-xl border border-dashed border-border-strong"
               />
             )}
           </div>

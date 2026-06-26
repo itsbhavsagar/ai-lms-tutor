@@ -51,31 +51,19 @@ function ChatMessagesPanel({
           {showEmptyState && (
             <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-4 py-6 sm:gap-5 sm:py-10">
               <div className="w-full max-w-sm space-y-1 text-center">
-                <p
-                  className="text-[11px] font-medium uppercase tracking-widest"
-                  style={{ color: "var(--text-muted)", opacity: 0.7 }}
-                >
+                <p className="text-[11px] font-medium uppercase tracking-widest text-muted opacity-70">
                   AI Mentor
                 </p>
-                <h2
-                  className="text-[16px] font-semibold tracking-tight sm:text-[17px]"
-                  style={{ color: "var(--text)" }}
-                >
+                <h2 className="text-[16px] font-semibold tracking-tight text-ink sm:text-[17px]">
                   {lesson.title}
                 </h2>
-                <p
-                  className="text-[11px] leading-relaxed"
-                  style={{ color: "var(--text-muted)" }}
-                >
+                <p className="text-[11px] leading-relaxed text-muted">
                   Chat what you want — ask, get quizzed, or go deep on production
                 </p>
               </div>
 
               <div className="w-full max-w-sm">
-                <p
-                  className="mb-2 text-[10px] font-medium uppercase tracking-wide"
-                  style={{ color: "var(--text-muted)", opacity: 0.65 }}
-                >
+                <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-muted opacity-65">
                   Or try
                 </p>
                 <ChatEmptyState

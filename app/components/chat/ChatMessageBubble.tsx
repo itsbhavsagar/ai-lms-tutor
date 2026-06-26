@@ -40,14 +40,10 @@ export default function ChatMessageBubble({
 
   return (
     <div
-      className="msg-in group flex min-w-0"
-      style={{ justifyContent: isUser ? "flex-end" : "flex-start" }}
+      className={`msg-in group flex min-w-0 ${isUser ? "justify-end" : "justify-start"}`}
     >
       {!isUser && (
-        <div
-          className="mr-1.5 mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold"
-          style={{ background: "var(--accent)", color: "var(--on-accent)" }}
-        >
+        <div className="mr-1.5 mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-on-accent">
           AI
         </div>
       )}
@@ -56,21 +52,11 @@ export default function ChatMessageBubble({
         <div
           className={`stream-bubble relative min-w-0 wrap-wrap-break-word rounded-xl px-3 py-2.5 text-[13px] leading-relaxed sm:px-3.5 ${
             isStreaming ? "is-streaming" : ""
-          }`}
-          style={
+          } ${
             isUser
-              ? {
-                  background: "var(--chat-user-bg)",
-                  color: "var(--chat-user-fg)",
-                  borderBottomRightRadius: 4,
-                }
-              : {
-                  background: "var(--accent-soft)",
-                  color: "var(--text)",
-                  border: "1px solid var(--accent-border)",
-                  borderBottomLeftRadius: 4,
-                }
-          }
+              ? "rounded-br-sm bg-chat-user text-chat-user-fg"
+              : "rounded-bl-sm border border-accent-border bg-accent-soft text-ink"
+          }`}
         >
           {isThinking ? (
             <ChatThinkingIndicator />
@@ -84,10 +70,7 @@ export default function ChatMessageBubble({
                 <MessageContent content={message.content} />
               </div>
               {isStreaming && (
-                <span
-                  className="stream-cursor ml-0.5 inline-block h-[1em] w-[2px] align-text-bottom"
-                  style={{ background: "var(--accent)" }}
-                />
+                <span className="stream-cursor ml-0.5 inline-block h-[1em] w-[2px] align-text-bottom bg-accent" />
               )}
             </>
           )}
@@ -102,8 +85,7 @@ export default function ChatMessageBubble({
             <button
               type="button"
               onClick={handleCopy}
-              className={`${chatBtnSubtleClass} flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px]`}
-              style={{ color: "var(--text-muted)" }}
+              className={`${chatBtnSubtleClass} flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-muted`}
               aria-label="Copy message"
             >
               {copied ? <RiCheckLine size={12} /> : <RiFileCopyLine size={12} />}
@@ -114,8 +96,7 @@ export default function ChatMessageBubble({
               <button
                 type="button"
                 onClick={onRegenerate}
-                className={`${chatBtnSubtleClass} flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px]`}
-                style={{ color: "var(--text-muted)" }}
+                className={`${chatBtnSubtleClass} flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-muted`}
               >
                 <RiRefreshLine size={12} />
                 Regenerate

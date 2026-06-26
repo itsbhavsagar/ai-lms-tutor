@@ -29,27 +29,21 @@ function PersonalizedReviewView({ review }: { review: PersonalizedReview }) {
   return (
     <div className="flex flex-col gap-4 pb-2">
       {review.mentorNote && (
-        <div
-          className="rounded-xl border p-4"
-          style={{
-            background: "var(--accent-soft)",
-            borderColor: "var(--accent-border)",
-          }}
-        >
-          <p className="text-[13px] leading-relaxed" style={{ color: "var(--text)" }}>
+        <div className="rounded-xl border border-accent-border bg-accent-soft p-4">
+          <p className="text-[13px] leading-relaxed text-ink">
             {review.mentorNote}
           </p>
         </div>
       )}
 
       <div className={`${cardClass} flex flex-col gap-3`}>
-        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--green)" }}>
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-green">
           You understood
         </p>
         <ul className="space-y-1.5">
           {review.understood.map((item, i) => (
-            <li key={i} className="flex items-start gap-2 text-[13px]" style={{ color: "var(--text)" }}>
-              <span style={{ color: "var(--green)" }}>✓</span>
+            <li key={i} className="flex items-start gap-2 text-[13px] text-ink">
+              <span className="text-green">✓</span>
               {item}
             </li>
           ))}
@@ -58,13 +52,13 @@ function PersonalizedReviewView({ review }: { review: PersonalizedReview }) {
 
       {review.struggled.length > 0 && (
         <div className={`${cardClass} flex flex-col gap-3`}>
-          <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--red)" }}>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-red">
             You struggled with
           </p>
           <ul className="space-y-1.5">
             {review.struggled.map((item, i) => (
-              <li key={i} className="flex items-start gap-2 text-[13px]" style={{ color: "var(--text)" }}>
-                <span style={{ color: "var(--red)" }}>✗</span>
+              <li key={i} className="flex items-start gap-2 text-[13px] text-ink">
+                <span className="text-red">✗</span>
                 {item}
               </li>
             ))}
@@ -74,32 +68,32 @@ function PersonalizedReviewView({ review }: { review: PersonalizedReview }) {
 
       {review.suggestedRevision && (
         <div className={`${cardClass} flex flex-col gap-2`}>
-          <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted">
             Suggested revision
           </p>
-          <p className="text-[13px] font-medium" style={{ color: "var(--text)" }}>
+          <p className="text-[13px] font-medium text-ink">
             {review.suggestedRevision}
           </p>
-          <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+          <p className="text-[12px] text-muted">
             ~{review.revisionMinutes} minutes
           </p>
         </div>
       )}
 
       <div className={`${cardClass} flex flex-col gap-2`}>
-        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted">
           Common interview mistake
         </p>
-        <p className="text-[13px] leading-relaxed" style={{ color: "var(--text)" }}>
+        <p className="text-[13px] leading-relaxed text-ink">
           {review.commonInterviewMistake}
         </p>
       </div>
 
       <div className={`${cardClass} flex flex-col gap-2`}>
-        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted">
           Production example
         </p>
-        <p className="text-[13px] leading-relaxed" style={{ color: "var(--text)" }}>
+        <p className="text-[13px] leading-relaxed text-ink">
           {review.productionExample}
         </p>
       </div>
@@ -122,10 +116,10 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <div className="flex flex-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 className={panelHeadingClass} style={{ color: "var(--text)" }}>
+          <h2 className={panelHeadingClass}>
             {generating ? LABEL_GENERATING : LABEL_HEADING}
           </h2>
-          <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+          <p className="text-[12px] text-muted">
             Mentor-mode review personalized to your quiz and activity
           </p>
         </div>
@@ -166,7 +160,7 @@ export default function SummaryTab({ lesson }: { lesson: Lesson }) {
         )}
 
         {!generating && review && !personalized && (
-          <p className="text-[13px]" style={{ color: "var(--text-muted)" }}>
+          <p className="text-[13px] text-muted">
             Regenerate to get a personalized review based on your latest activity.
           </p>
         )}

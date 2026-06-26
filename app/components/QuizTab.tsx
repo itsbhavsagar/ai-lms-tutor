@@ -19,7 +19,16 @@ import type { QuizGetResponse } from "@/lib/api/quiz";
 import EmptyState from "./ui/EmptyState";
 import PrimaryButton from "./ui/PrimaryButton";
 import { SkeletonQuiz } from "./ui/Skeleton";
-import { cardClass, panelHeadingClass, panelSubtextClass, breakAnywhereClass } from "@/lib/ui/styles";
+import {
+  breakAnywhereClass,
+  panelHeadingClass,
+  panelSubtextClass,
+  quizOptionCorrectClass,
+  quizOptionDefaultClass,
+  quizOptionDimmedClass,
+  quizOptionSelectedClass,
+  quizOptionWrongClass,
+} from "@/lib/ui/styles";
 
 const LABEL_GENERATE = "Generate Quiz";
 const LABEL_REGENERATE = "Regenerate";
@@ -150,10 +159,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 sm:gap-4">
       <div className="flex min-w-0 flex-none items-start justify-between gap-2">
         <div className="min-w-0 flex flex-1 flex-col gap-0.5">
-          <h2
-            className={panelHeadingClass}
-            style={{ color: "var(--text)" }}
-          >
+          <h2 className={panelHeadingClass}>
             {generating
               ? LABEL_GENERATING
               : questions.length > 0
@@ -161,19 +167,19 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
                 : LABEL_HEADING}
           </h2>
           {!generating && questions.length > 0 && !submitted && (
-            <p className={panelSubtextClass} style={{ color: "var(--text-muted)" }}>
+            <p className={panelSubtextClass}>
               {answered} / {questions.length} {LABEL_ANSWERED}
             </p>
           )}
           {submitted && !generating && (
-            <p className={panelSubtextClass} style={{ color: "var(--text-muted)" }}>
+            <p className={panelSubtextClass}>
               {score} / {questions.length} {LABEL_CORRECT}
             </p>
           )}
           {bestPreviousScore !== null && !submitted && !generating && (
-            <p className={panelSubtextClass} style={{ color: "var(--text-muted)" }}>
+            <p className={panelSubtextClass}>
               Previous best:{" "}
-              <span style={{ color: "var(--green)", fontWeight: 600 }}>
+              <span className="font-semibold text-green">
                 {bestPreviousScore}/{questions.length}
               </span>
             </p>
@@ -212,29 +218,14 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
       ) : null}
 
       {submitted && quizData && questions.length > 0 && !generating && (
-        <div
-          className="w-full flex-none rounded-xl border p-4 text-center sm:p-6"
-          style={{
-            background: "var(--accent-soft)",
-            border: "1px solid var(--accent-border)",
-          }}
-        >
-          <p
-            className="mb-1 text-4xl font-bold sm:text-5xl"
-            style={{ color: "var(--text)" }}
-          >
+        <div className="w-full flex-none rounded-xl border border-accent-border bg-accent-soft p-4 text-center sm:p-6">
+          <p className="mb-1 text-4xl font-bold text-ink sm:text-5xl">
             {pct}%
           </p>
-          <p
-            className="text-[13px] font-medium"
-            style={{ color: "var(--text)" }}
-          >
+          <p className="text-[13px] font-medium text-ink">
             {score} / {questions.length} {LABEL_CORRECT}
           </p>
-          <p
-            className="mt-1 text-[12px]"
-            style={{ color: "var(--text-muted)" }}
-          >
+          <p className="mt-1 text-[12px] text-muted">
             {feedbackMsg}
           </p>
         </div>
@@ -244,17 +235,8 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
         <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
           <div className="flex min-w-0 flex-col gap-3 pb-2 sm:gap-4">
             {previousAttempts.length > 1 && submitted && (
-              <div
-                className="rounded-xl border p-4"
-                style={{
-                  background: "var(--surface-raised)",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                <p
-                  className="mb-2 flex items-center gap-1.5 text-[12px] font-semibold"
-                  style={{ color: "var(--text-muted)" }}
-                >
+              <div className="rounded-xl border border-border bg-surface-raised p-4">
+                <p className="mb-2 flex items-center gap-1.5 text-[12px] font-semibold text-muted">
                   <RiTrophyLine size={13} />
                   Past attempts
                 </p>
@@ -262,18 +244,15 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
                   {previousAttempts.map((a, i) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between gap-3 text-[12px]"
-                      style={{ color: "var(--text-muted)" }}
+                      className="flex items-center justify-between gap-3 text-[12px] text-muted"
                     >
                       <span>Attempt {i + 1}</span>
                       <span
-                        style={{
-                          color:
-                            a.score === a.total
-                              ? "var(--green)"
-                              : "var(--text-muted)",
-                          fontWeight: a.score === a.total ? 600 : 400,
-                        }}
+                        className={
+                          a.score === a.total
+                            ? "font-semibold text-green"
+                            : "font-normal text-muted"
+                        }
                       >
                         {a.score}/{a.total}
                       </span>
@@ -286,31 +265,21 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
             {questions.map((q, qIndex) => (
               <div
                 key={qIndex}
-                className="flex min-w-0 flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] p-3 shadow-sm sm:gap-4 sm:p-5"
+                className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-surface-raised p-3 shadow-sm sm:gap-4 sm:p-5"
               >
                 <div className="flex min-w-0 flex-col gap-2">
                   <div className="flex min-w-0 items-center gap-2">
-                    <span
-                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                      style={{ background: "var(--accent)" }}
-                    >
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-on-accent">
                       {qIndex + 1}
                     </span>
                     {q.difficulty && (
-                      <span
-                        className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium uppercase"
-                        style={{
-                          background: "var(--accent-soft)",
-                          color: "var(--accent)",
-                        }}
-                      >
+                      <span className="shrink-0 rounded-md bg-accent-soft px-1.5 py-0.5 text-[10px] font-medium uppercase text-accent">
                         {q.difficulty}
                       </span>
                     )}
                   </div>
                   <p
-                    className={`${breakAnywhereClass} text-[13px] font-semibold leading-snug sm:text-[14px]`}
-                    style={{ color: "var(--text)" }}
+                    className={`${breakAnywhereClass} text-[13px] font-semibold leading-snug text-ink sm:text-[14px]`}
                   >
                     {q.question}
                   </p>
@@ -318,11 +287,10 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
 
                 {q.checksConcept && (
                   <p
-                    className={`${breakAnywhereClass} text-[11px] leading-snug`}
-                    style={{ color: "var(--text-muted)" }}
+                    className={`${breakAnywhereClass} text-[11px] leading-snug text-muted`}
                   >
                     Checks your understanding of{" "}
-                    <span className="font-medium" style={{ color: "var(--accent)" }}>
+                    <span className="font-medium text-accent">
                       {q.checksConcept}
                     </span>
                   </p>
@@ -337,42 +305,28 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
                       quizData?.lastSelected &&
                       quizData.lastSelected[qIndex] === oIndex;
 
-                    let bg = "var(--bg-panel)";
-                    let border = "var(--border)";
-                    let color = "var(--text)";
+                    let optionClass = quizOptionDefaultClass;
                     let Icon = null as React.ReactNode;
 
                     if (submitted) {
                       if (isCorrect) {
-                        bg = "var(--green-soft)";
-                        border = "var(--green-border)";
-                        color = "var(--green)";
+                        optionClass = quizOptionCorrectClass;
                         Icon = <RiCheckLine size={14} />;
                       } else if (wasSelected || isSelected) {
-                        bg = "var(--red-soft)";
-                        border = "var(--red-border)";
-                        color = "var(--red)";
+                        optionClass = quizOptionWrongClass;
                         Icon = <RiCloseLine size={14} />;
                       } else {
-                        color = "var(--text-muted)";
+                        optionClass = `${quizOptionDimmedClass} border-border bg-panel`;
                       }
                     } else if (isSelected) {
-                      bg = "var(--selection-bg)";
-                      border = "var(--selection-bg)";
-                      color = "var(--selection-fg)";
+                      optionClass = quizOptionSelectedClass;
                     }
 
                     return (
                       <button
                         key={oIndex}
                         onClick={() => selectOption(qIndex, oIndex)}
-                        className="flex w-full min-w-0 items-start justify-between gap-2 rounded-lg border px-3 py-2.5 text-left text-[12px] leading-snug transition-all duration-100 sm:gap-3 sm:px-4 sm:text-[13px]"
-                        style={{
-                          background: bg,
-                          border: `1px solid ${border}`,
-                          color,
-                          cursor: submitted ? "default" : "pointer",
-                        }}
+                        className={`flex w-full min-w-0 items-start justify-between gap-2 rounded-lg border px-3 py-2.5 text-left text-[12px] leading-snug transition-all duration-100 sm:gap-3 sm:px-4 sm:text-[13px] ${optionClass}`}
                       >
                         <span
                           className={`${breakAnywhereClass} flex-1 font-mono text-[11px] sm:font-sans sm:text-[13px]`}
@@ -386,31 +340,20 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
                 </div>
 
                 {submitted && q.explanation && (
-                  <div
-                    className="flex flex-col gap-2 rounded-lg border p-3"
-                    style={{
-                      background: "var(--surface-raised)",
-                      borderColor: "var(--border)",
-                    }}
-                  >
-                    <p
-                      className="text-[11px] font-semibold uppercase tracking-wide"
-                      style={{ color: "var(--green)" }}
-                    >
+                  <div className="flex flex-col gap-2 rounded-lg border border-border bg-surface-raised p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-green">
                       Explanation
                     </p>
                     <p
-                      className={`${breakAnywhereClass} text-[12px] leading-relaxed`}
-                      style={{ color: "var(--text)" }}
+                      className={`${breakAnywhereClass} text-[12px] leading-relaxed text-ink`}
                     >
                       {q.explanation}
                     </p>
                     {q.interviewTakeaway && (
                       <p
-                        className={`${breakAnywhereClass} text-[12px] leading-relaxed`}
-                        style={{ color: "var(--text-muted)" }}
+                        className={`${breakAnywhereClass} text-[12px] leading-relaxed text-muted`}
                       >
-                        <span className="font-semibold" style={{ color: "var(--accent)" }}>
+                        <span className="font-semibold text-accent">
                           Interview takeaway:{" "}
                         </span>
                         {q.interviewTakeaway}

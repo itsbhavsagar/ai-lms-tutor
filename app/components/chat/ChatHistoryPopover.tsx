@@ -36,21 +36,9 @@ function ChatHistoryPopover({
   const hasMore = sessions.length > POPOVER_PREVIEW_LIMIT;
 
   return (
-    <div
-      className="w-72 overflow-hidden rounded-xl border shadow-md"
-      style={{
-        background: "var(--bg-panel)",
-        borderColor: "var(--border)",
-      }}
-    >
-      <div
-        className="border-b px-3 py-2.5"
-        style={{ borderColor: "var(--border)" }}
-      >
-        <p
-          className="text-[11px] font-semibold uppercase tracking-wider"
-          style={{ color: "var(--text-muted)" }}
-        >
+    <div className="w-72 overflow-hidden rounded-xl border border-border bg-panel shadow-md">
+      <div className="border-b border-border px-3 py-2.5">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
           Recent chats
         </p>
       </div>
@@ -71,16 +59,12 @@ function ChatHistoryPopover({
         ))}
       </div>
 
-      <div
-        className="flex flex-col gap-0.5 border-t px-1.5 py-1.5"
-        style={{ borderColor: "var(--border)" }}
-      >
+      <div className="flex flex-col gap-0.5 border-t border-border px-1.5 py-1.5">
         <button
           type="button"
           onClick={onNewChat}
           disabled={disabled}
-          className={`${chatBtnClass} flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[12px] font-medium hover:bg-(--border)/30`}
-          style={{ color: "var(--text)" }}
+          className={`${chatBtnClass} flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[12px] font-medium text-ink hover:bg-border/30`}
         >
           <RiPencilLine size={14} />
           New chat
@@ -89,8 +73,7 @@ function ChatHistoryPopover({
           <button
             type="button"
             onClick={onViewAll}
-            className={`${chatBtnSubtleClass} flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-[12px] font-medium hover:bg-(--border)/30`}
-            style={{ color: "var(--text-muted)" }}
+            className={`${chatBtnSubtleClass} flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-[12px] font-medium text-muted hover:bg-border/30`}
           >
             View all
             <RiArrowRightSLine size={14} />

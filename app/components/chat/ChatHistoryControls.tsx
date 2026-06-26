@@ -37,7 +37,7 @@ type ChatHistoryUIProps = ChatHistorySessionProps & {
   showNewChat: boolean;
 };
 
-const iconBtnClass = `${chatBtnClass} flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border hover:opacity-90`;
+const iconBtnClass = `${chatBtnClass} flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border-strong bg-input text-muted hover:opacity-90 disabled:opacity-50`;
 
 export const ChatHistoryToolbar = memo(function ChatHistoryToolbar({
   sessions,
@@ -106,13 +106,6 @@ export const ChatHistoryToolbar = memo(function ChatHistoryToolbar({
 
   if (!showHistory && !showNewChat) return null;
 
-  const btnStyle = {
-    borderColor: "var(--border-strong)",
-    background: "var(--input-bg)",
-    color: "var(--text-muted)",
-    opacity: disabled ? 0.5 : 1,
-  };
-
   return (
     <div className="flex shrink-0 items-center gap-1.5 pb-0.5">
         {showNewChat && (
@@ -122,7 +115,6 @@ export const ChatHistoryToolbar = memo(function ChatHistoryToolbar({
             disabled={disabled}
             aria-label="New chat"
             className={iconBtnClass}
-            style={btnStyle}
           >
             <RiPencilLine size={16} />
           </button>
@@ -142,16 +134,9 @@ export const ChatHistoryToolbar = memo(function ChatHistoryToolbar({
               aria-expanded={popoverOpen || drawerOpen}
               aria-haspopup="dialog"
               className={`${iconBtnClass} relative`}
-              style={btnStyle}
             >
               <RiHistoryLine size={16} />
-              <span
-                className="absolute -top-1 -right-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-0.5 text-[9px] font-semibold leading-none"
-                style={{
-                  background: "var(--accent)",
-                  color: "var(--on-accent)",
-                }}
-              >
+              <span className="absolute -top-1 -right-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-accent px-0.5 text-[9px] font-semibold leading-none text-on-accent">
                 {sessions.length}
               </span>
             </button>

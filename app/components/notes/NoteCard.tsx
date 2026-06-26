@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, type CSSProperties } from "react";
 import type { NoteItem } from "@/lib/api/notes";
 import { formatNoteDate, notePreview } from "@/lib/api/notes";
 import { getNoteCardColors } from "@/lib/notes/colors";
@@ -15,37 +15,31 @@ function NoteCard({ note, active, onSelect }: NoteCardProps) {
   const colors = getNoteCardColors(note.id);
   const displayTitle = note.title.trim() || "Untitled";
 
+  const cardVars = {
+    "--nc-bg": colors.background,
+    "--nc-bg-active": colors.backgroundActive,
+    "--nc-border": colors.border,
+    "--nc-border-active": colors.borderActive,
+    "--nc-ring": "transparent",
+    "--nc-title": colors.title,
+    "--nc-muted": colors.muted,
+  } as CSSProperties;
+
   return (
     <button
       type="button"
       onClick={onSelect}
-      className="flex min-h-[88px] w-full appearance-none flex-col gap-1 rounded-xl border p-3 text-left transition-colors duration-150 outline-none focus-visible:outline-2 focus-visible:outline-offset-0"
-      style={{
-        background: active ? colors.backgroundActive : colors.background,
-        borderColor: active ? colors.borderActive : colors.border,
-        boxShadow: active
-          ? `inset 0 0 0 1px ${colors.borderActive}`
-          : "inset 0 0 0 1px transparent",
-        outlineColor: "var(--accent)",
-        WebkitTapHighlightColor: "transparent",
-      }}
+      data-active={active}
+      className="note-card flex min-h-[88px] w-full appearance-none flex-col gap-1 rounded-xl border p-3 text-left outline-none transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-0"
+      style={cardVars}
     >
-      <p
-        className="truncate text-[13px] font-semibold leading-snug"
-        style={{ color: colors.title }}
-      >
+      <p className="note-card-title truncate text-[13px] font-semibold leading-snug">
         {displayTitle}
       </p>
-      <p
-        className="line-clamp-2 flex-1 text-[11px] leading-relaxed"
-        style={{ color: colors.muted }}
-      >
+      <p className="note-card-muted line-clamp-2 flex-1 text-[11px] leading-relaxed">
         {notePreview(note.content)}
       </p>
-      <p
-        className="mt-auto text-[10px] tabular-nums"
-        style={{ color: colors.muted, opacity: 0.85 }}
-      >
+      <p className="note-card-date mt-auto text-[10px] tabular-nums">
         {formatNoteDate(note.updatedAt)}
       </p>
     </button>

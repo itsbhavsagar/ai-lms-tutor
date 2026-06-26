@@ -26,12 +26,7 @@ export function MobileNavToggle({
       type="button"
       onClick={onOpen}
       aria-label={label}
-      className={`${chatBtnClass} flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border md:hidden`}
-      style={{
-        borderColor: "var(--border-strong)",
-        background: "var(--bg-panel)",
-        color: "var(--text-muted)",
-      }}
+      className={`${chatBtnClass} flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border-strong bg-panel text-muted md:hidden`}
     >
       <RiMenuLine size={18} />
     </button>
@@ -77,23 +72,13 @@ export default function MobileLessonNav({
         className="absolute inset-0 bg-black/50 backdrop-blur-[1px]"
         onClick={() => onOpenChange(false)}
       />
-      <div
-        className="mobile-nav-drawer absolute inset-y-0 left-0 flex w-[min(88vw,20rem)] max-w-full flex-col shadow-xl"
-        style={{
-          background: "var(--bg-sidebar)",
-          borderRight: "1px solid var(--sidebar-border)",
-        }}
-      >
-        <div
-          className="flex flex-none justify-end px-3 pt-3"
-          style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
-        >
+      <div className="mobile-nav-drawer absolute inset-y-0 left-0 flex w-[min(88vw,20rem)] max-w-full flex-col border-r border-sidebar-border bg-sidebar shadow-xl">
+        <div className="flex flex-none justify-end px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <button
             type="button"
             onClick={() => onOpenChange(false)}
             aria-label="Close menu"
-            className={`${chatBtnClass} flex h-9 w-9 items-center justify-center rounded-lg`}
-            style={{ color: "var(--text-sidebar)" }}
+            className={`${chatBtnClass} flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-text`}
           >
             <RiCloseLine size={20} />
           </button>

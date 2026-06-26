@@ -22,7 +22,7 @@ import MessageContent from "./MessageContent";
 import ChatThinkingIndicator from "./chat/ChatThinkingIndicator";
 import EmptyState from "./ui/EmptyState";
 import PrimaryButton from "./ui/PrimaryButton";
-import { btnInteractive, panelHeadingClass } from "@/lib/ui/styles";
+import { btnInteractive, inputFieldClass, panelHeadingClass, panelSubtextClass, raisedFieldClass } from "@/lib/ui/styles";
 
 type InputMode = "paste" | "pdf";
 
@@ -139,16 +139,10 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
       {!indexed ? (
         <>
           <div className="flex min-w-0 flex-none flex-col gap-0.5">
-            <h2
-              className={panelHeadingClass}
-              style={{ color: "var(--text)" }}
-            >
+            <h2 className={panelHeadingClass}>
               {LABEL_HEADING}
             </h2>
-            <p
-              className="wrap-wrap-wrap-break-word text-[12px]"
-              style={{ color: "var(--text-muted)" }}
-            >
+            <p className={`wrap-wrap-wrap-break-word ${panelSubtextClass}`}>
               {LABEL_SUBHEADING}
             </p>
           </div>
@@ -160,12 +154,11 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                 <button
                   key={m}
                   onClick={() => setMode(m)}
-                  className={`${btnInteractive} flex flex-1 items-center justify-center gap-1.5 rounded-xl border px-4 py-2 text-[13px] font-medium sm:flex-none`}
-                  style={{
-                    background: active ? "var(--accent)" : "var(--surface-raised)",
-                    color: active ? "var(--on-accent)" : "var(--text-muted)",
-                    border: `1px solid ${active ? "var(--accent)" : "var(--border-strong)"}`,
-                  }}
+                  className={`${btnInteractive} flex flex-1 items-center justify-center gap-1.5 rounded-xl border px-4 py-2 text-[13px] font-medium sm:flex-none ${
+                    active
+                      ? "border-accent bg-accent text-on-accent"
+                      : "border-border-strong bg-surface-raised text-muted"
+                  }`}
                 >
                   {m === "paste" ? (
                     <RiClipboardLine size={13} />
@@ -184,66 +177,38 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder={LABEL_PASTE_HINT}
-                className="h-full w-full min-w-0 resize-none rounded-xl border p-4 text-[13px] leading-relaxed outline-none transition-colors sm:p-5"
-                style={{
-                  background: "var(--surface-raised)",
-                  border: "1px solid var(--border-strong)",
-                  color: "var(--text)",
-                }}
-                onFocus={(e) =>
-                  (e.currentTarget.style.borderColor = "var(--accent)")
-                }
-                onBlur={(e) =>
-                  (e.currentTarget.style.borderColor = "var(--border-strong)")
-                }
+                className={`${raisedFieldClass} h-full w-full min-w-0 resize-none rounded-xl p-4 text-[13px] leading-relaxed transition-colors focus:border-accent sm:p-5`}
               />
             )}
 
             {mode === "pdf" && (
               <div
                 onClick={() => fileRef.current?.click()}
-                className="flex h-full cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-all"
-                style={{
-                  borderColor: file ? "var(--accent)" : "var(--border-strong)",
-                  background: file
-                    ? "var(--accent-soft)"
-                    : "var(--surface-raised)",
-                }}
+                className={`flex h-full cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-all ${
+                  file
+                    ? "border-accent bg-accent-soft"
+                    : "border-border-strong bg-surface-raised"
+                }`}
               >
                 <RiUploadCloud2Line
                   size={32}
-                  style={{
-                    color: file ? "var(--accent)" : "var(--text-muted)",
-                    opacity: 0.6,
-                  }}
+                  className={`opacity-60 ${file ? "text-accent" : "text-muted"}`}
                 />
                 {file ? (
                   <>
-                    <p
-                      className="max-w-full wrap-wrap-break-word text-[13px] font-semibold"
-                      style={{ color: "var(--text)" }}
-                    >
+                    <p className="max-w-full wrap-wrap-break-word text-[13px] font-semibold text-ink">
                       {file.name}
                     </p>
-                    <p
-                      className="wrap-wrap-break-word text-[11px]"
-                      style={{ color: "var(--text-muted)" }}
-                    >
+                    <p className="wrap-wrap-break-word text-[11px] text-muted">
                       {(file.size / 1024).toFixed(1)} KB — {LABEL_PDF_CHANGE}
                     </p>
                   </>
                 ) : (
                   <>
-                    <p
-                      className="wrap-wrap-break-word text-[13px] font-medium"
-                      style={{ color: "var(--text)" }}
-                    >
+                    <p className="wrap-wrap-break-word text-[13px] font-medium text-ink">
                       {LABEL_PDF_CLICK}
                     </p>
-                    <p
-                      className="wrap-wrap-break-word text-[11px]"
-                      style={{ color: "var(--text-muted)" }}
-                    >
+                    <p className="wrap-wrap-break-word text-[11px] text-muted">
                       {LABEL_PDF_HINT}
                     </p>
                   </>
@@ -271,23 +236,11 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
         </>
       ) : (
         <>
-          <div
-            className="flex flex-none flex-col gap-2 rounded-xl px-4 py-2.5 text-[12px] font-medium sm:flex-row sm:items-center sm:justify-between"
-            style={{
-              background: "var(--green-soft)",
-              color: "var(--green)",
-              border: "1px solid var(--green-border)",
-            }}
-          >
+          <div className="flex flex-none flex-col gap-2 rounded-xl border border-green-border bg-green-soft px-4 py-2.5 text-[12px] font-medium text-green sm:flex-row sm:items-center sm:justify-between">
             <span className="min-w-0 wrap-wrap-break-word">{statusText}</span>
             <button
               onClick={handleReIndex}
-              className="underline"
-              style={{
-                color: "var(--green)",
-                background: "transparent",
-                cursor: "pointer",
-              }}
+              className="cursor-pointer bg-transparent text-green underline"
             >
               {LABEL_RE_INDEX}
             </button>
@@ -307,36 +260,19 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
               {messages.map((msg, i) => (
                 <div
                   key={i}
-                  className="msg-in flex min-w-0"
-                  style={{
-                    justifyContent:
-                      msg.role === "user" ? "flex-end" : "flex-start",
-                  }}
+                  className={`msg-in flex min-w-0 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   {msg.role === "assistant" && (
-                    <div
-                      className="mr-2 mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                      style={{ background: "var(--accent)" }}
-                    >
+                    <div className="mr-2 mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-on-accent">
                       A
                     </div>
                   )}
                   <div
-                    className="min-w-0 max-w-[88%] wrap-wrap-break-word rounded-2xl px-3 py-2.5 text-[13px] leading-relaxed sm:max-w-[78%] sm:px-4 lg:max-w-[72%]"
-                    style={
+                    className={`min-w-0 max-w-[88%] wrap-wrap-break-word rounded-2xl px-3 py-2.5 text-[13px] leading-relaxed sm:max-w-[78%] sm:px-4 lg:max-w-[72%] ${
                       msg.role === "user"
-                        ? {
-                            background: "var(--chat-user-bg)",
-                            color: "var(--chat-user-fg)",
-                            borderBottomRightRadius: 4,
-                          }
-                        : {
-                            background: "var(--accent-soft)",
-                            color: "var(--text)",
-                            border: "1px solid var(--accent-border)",
-                            borderBottomLeftRadius: 4,
-                          }
-                    }
+                        ? "rounded-br-sm bg-chat-user text-chat-user-fg"
+                        : "rounded-bl-sm border border-accent-border bg-accent-soft text-ink"
+                    }`}
                   >
                     {msg.content === "" ? (
                       <ChatThinkingIndicator label="Answering" />
@@ -345,7 +281,7 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
                       i === messages.length - 1 ? (
                       <div className="space-y-2 wrap-wrap-break-word">
                         <MessageContent content={msg.content} />
-                        <span style={{ color: "var(--text-muted)" }}>
+                        <span className="text-muted">
                           {LABEL_RETRIEVING}
                         </span>
                       </div>
@@ -363,18 +299,10 @@ export default function RagTab({ lesson }: { lesson: Lesson }) {
             </div>
           </div>
 
-          <div
-            className="flex-none border-t pt-4"
-            style={{ borderColor: "var(--border)" }}
-          >
+          <div className="flex-none border-t border-border pt-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <input
-                className="min-h-10 w-full min-w-0 flex-1 rounded-xl border px-4 py-2.5 text-[13px] outline-none"
-                style={{
-                  border: "1px solid var(--border-strong)",
-                  background: "var(--input-bg)",
-                  color: "var(--text)",
-                }}
+                className={`${inputFieldClass} min-h-10 w-full min-w-0 flex-1 rounded-xl px-4 py-2.5 text-[13px]`}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && sendMessage()}

@@ -25,6 +25,20 @@ Utility tabs: **Notes**, **RAG Chat** (upload PDFs for lesson-scoped retrieval),
 
 ---
 
+## UI overview
+
+| Area | Behavior |
+|------|----------|
+| **Lesson sidebar** | Collapsible **Learning Tracks** on desktop (AI Engineering, Frontend, Backend, System Design) |
+| **Mobile nav** | Hamburger opens a slide-in drawer with the full track/lesson list |
+| **Learn chat** | No permanent history sidebar — pencil for new chat; history popover/drawer when 2+ sessions exist |
+| **Notes** | Multi-note per lesson, local drafts, mobile editor toolbar (Save / Cancel / Edit / Delete) |
+| **Practice** | Mobile-friendly quiz cards with wrapping code options; Generate / Regenerate in the top-right |
+| **Typography** | Geist Sans + Geist Mono |
+| **Progress color** | `#00AA45` for quiz success, review strengths, and active lesson indicators |
+
+---
+
 ## Curriculum
 
 Lessons live in `lib/curriculum/` and are re-exported from `app/data/lessons.ts`.
@@ -41,7 +55,7 @@ Lessons live in `lib/curriculum/` and are re-exported from `app/data/lessons.ts`
 Each lesson includes:
 
 - `objectives`, `concepts`, `productionTopics`, `interviewFocus`
-- `prerequisites`, `tags`, `difficulty`, `estimatedMinutes`
+- `prerequisites`, `tags`, `difficulty`, `estimatedMinutes`, `trackId`
 
 `lib/curriculum/knowledge-graph.ts` links lessons via concept chains and prerequisite edges. The learner profile uses this graph for cross-lesson weak/strong concept detection.
 
@@ -155,14 +169,14 @@ All AI routes accept `lessonId` (required) and optionally `userId` for personali
 | Framework | Next.js 16 (App Router) |
 | Language | TypeScript |
 | Styling | Tailwind CSS v4 |
+| Typography | Geist Sans + Geist Mono |
 | AI (chat / quiz / review / interview) | Groq — `llama-3.1-8b-instant` |
 | Embeddings | Cohere — `embed-english-v3.0` |
 | Voice | Groq Whisper (`whisper-large-v3-turbo`) |
 | Database | PostgreSQL (Neon) |
 | ORM | Prisma |
 | Client state | TanStack Query |
-| Validation | Zod |
-| Toasts | react-hot-toast |
+| Toasts | Sonner |
 
 ---
 
@@ -176,7 +190,7 @@ All AI routes accept `lessonId` (required) and optionally `userId` for personali
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/bhavsagar/ai-lms-tutor.git
+git clone https://github.com/itsbhavsagar/ai-lms-tutor.git
 cd ai-lms-tutor
 npm install
 ```
@@ -193,12 +207,14 @@ DATABASE_URL=postgresql://user:pass@host/db?sslmode=require
 
 ### 3. Database
 
-Ensure your Neon project is **active** (paused databases cause connection failures). Then:
+Ensure your Neon project is **active** (paused databases cause connection failures). Use the **direct** (non-pooler) connection URL for migrations if the pooler times out. Then:
 
 ```bash
 npx prisma migrate deploy
 npx prisma generate
 ```
+
+`postinstall` and `dev` also run `prisma generate` automatically.
 
 An anonymous `userId` is generated in `localStorage` on first visit and upserted to Postgres on the first API call that needs it.
 
@@ -216,25 +232,42 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```
 app/
-  api/              # Route handlers (chat, quiz, summary, interview, RAG, sessions, notes)
-  components/       # Tab UIs (ChatTab, QuizTab, SummaryTab, InterviewTab, Notes, Rag, Demo)
-  data/lessons.ts   # Re-exports from lib/curriculum
-  types/            # Quiz, summary/review, chat types
+  api/                    # Route handlers (chat, quiz, summary, interview, RAG, sessions, notes)
+  components/
+    chat/                 # ChatComposer, history popover/drawer, message bubbles
+    notes/                # NoteCard
+    ui/                   # EmptyState, PrimaryButton, Skeleton
+    ChatTab.tsx           # Learn tab + session history UX
+    QuizTab.tsx           # Practice tab
+    SummaryTab.tsx        # Review tab
+    InterviewTab.tsx      # Mock interview
+    NotesTab.tsx          # Multi-note editor
+    RagTab.tsx            # PDF RAG chat
+    DemoTab.tsx           # Live voice chat
+    LessonTrackSidebar.tsx
+    LessonSidebarPanel.tsx
+    MobileLessonNav.tsx   # Mobile hamburger drawer
+    RecruiterDashboard.tsx
+    Tabs.tsx
+  data/lessons.ts         # Re-exports from lib/curriculum
+  types/                  # Quiz, summary/review, chat types
 
 lib/
   ai/
-    prompts/        # Mode-specific system prompts (learn, practice, review, interview)
-    mentor-engine.ts   # Turn plan: mode, strategy, ending, transitions, session memory
-    mentor-context.ts  # Off-topic detection, confusion signals
-  curriculum/       # Lesson metadata, tracks, knowledge graph
-  db/               # Prisma client, learner profile, quiz performance, sessions
-  chat/             # Message formatting, suggestions, session storage
-  learning/         # Workflow step definitions, legacy tab migration
-  hooks/            # useAppNavigation, useSessions, useRecruiterMode
-  utils/            # Navigation persistence, validation, rate limiting
+    prompts/              # Mode-specific system prompts (learn, practice, review, interview)
+    mentor-engine.ts      # Turn plan: mode, strategy, ending, transitions, session memory
+    mentor-context.ts     # Off-topic detection, confusion signals
+  curriculum/             # Lesson metadata, tracks, knowledge graph
+  db/                   # Prisma client, learner profile, quiz performance, sessions
+  chat/                   # Message formatting, suggestions, session cache
+  learning/               # Workflow step definitions, legacy tab migration
+  hooks/                  # useAppNavigation, TanStack Query hooks, useRecruiterMode
+  notes/                  # Draft helpers, card colors
+  ui/                     # Shared style tokens (buttons, cards, plain-field)
+  utils/                  # Navigation persistence, validation, rate limiting
 
 prisma/
-  schema.prisma     # User, Session, Message, Note, Quiz, Summary, Document, Chunk
+  schema.prisma           # User, Session, Message, Note, Quiz, Summary, Document, Chunk
 ```
 
 ---
