@@ -19,7 +19,7 @@ import type { QuizGetResponse } from "@/lib/api/quiz";
 import EmptyState from "./ui/EmptyState";
 import PrimaryButton from "./ui/PrimaryButton";
 import { SkeletonQuiz } from "./ui/Skeleton";
-import { cardClass, panelHeadingClass, panelSubtextClass } from "@/lib/ui/styles";
+import { cardClass, panelHeadingClass, panelSubtextClass, breakAnywhereClass } from "@/lib/ui/styles";
 
 const LABEL_GENERATE = "Generate Quiz";
 const LABEL_REGENERATE = "Regenerate";
@@ -147,9 +147,9 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="flex flex-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0 flex flex-col gap-0.5">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 sm:gap-4">
+      <div className="flex min-w-0 flex-none items-start justify-between gap-2">
+        <div className="min-w-0 flex flex-1 flex-col gap-0.5">
           <h2
             className={panelHeadingClass}
             style={{ color: "var(--text)" }}
@@ -183,7 +183,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
         <PrimaryButton
           onClick={handleGenerateQuiz}
           disabled={generating}
-          fullWidth
+          className="shrink-0 whitespace-nowrap px-2.5 py-1.5 text-[12px] sm:px-4 sm:py-2.5 sm:text-[13px]"
         >
           {questions.length > 0 ? (
             <RiRefreshLine size={14} />
@@ -241,8 +241,8 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
       )}
 
       {!generating && questions.length > 0 && (
-        <div className="min-h-0 flex-1 overflow-y-auto pr-0 sm:pr-1">
-          <div className="flex flex-col gap-4 pb-2">
+        <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
+          <div className="flex min-w-0 flex-col gap-3 pb-2 sm:gap-4">
             {previousAttempts.length > 1 && submitted && (
               <div
                 className="rounded-xl border p-4"
@@ -286,37 +286,39 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
             {questions.map((q, qIndex) => (
               <div
                 key={qIndex}
-                className={`${cardClass} flex flex-col gap-4`}
+                className="flex min-w-0 flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] p-3 shadow-sm sm:gap-4 sm:p-5"
               >
-                <p
-                  className="flex items-start gap-2.5 text-[13px] font-semibold leading-snug"
-                  style={{ color: "var(--text)" }}
-                >
-                  <span
-                    className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                    style={{ background: "var(--accent)" }}
-                  >
-                    {qIndex + 1}
-                  </span>
-                  <span className="min-w-0 flex-1 wrap-break-word">
-                    {q.question}
-                  </span>
-                  {q.difficulty && (
+                <div className="flex min-w-0 flex-col gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
                     <span
-                      className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium uppercase"
-                      style={{
-                        background: "var(--accent-soft)",
-                        color: "var(--accent)",
-                      }}
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                      style={{ background: "var(--accent)" }}
                     >
-                      {q.difficulty}
+                      {qIndex + 1}
                     </span>
-                  )}
-                </p>
+                    {q.difficulty && (
+                      <span
+                        className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium uppercase"
+                        style={{
+                          background: "var(--accent-soft)",
+                          color: "var(--accent)",
+                        }}
+                      >
+                        {q.difficulty}
+                      </span>
+                    )}
+                  </div>
+                  <p
+                    className={`${breakAnywhereClass} text-[13px] font-semibold leading-snug sm:text-[14px]`}
+                    style={{ color: "var(--text)" }}
+                  >
+                    {q.question}
+                  </p>
+                </div>
 
                 {q.checksConcept && (
                   <p
-                    className="text-[11px] leading-snug"
+                    className={`${breakAnywhereClass} text-[11px] leading-snug`}
                     style={{ color: "var(--text-muted)" }}
                   >
                     Checks your understanding of{" "}
@@ -364,7 +366,7 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
                       <button
                         key={oIndex}
                         onClick={() => selectOption(qIndex, oIndex)}
-                        className="flex w-full items-start justify-between gap-3 rounded-lg border px-4 py-2.5 text-left text-[13px] leading-snug transition-all duration-100"
+                        className="flex w-full min-w-0 items-start justify-between gap-2 rounded-lg border px-3 py-2.5 text-left text-[12px] leading-snug transition-all duration-100 sm:gap-3 sm:px-4 sm:text-[13px]"
                         style={{
                           background: bg,
                           border: `1px solid ${border}`,
@@ -372,7 +374,9 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
                           cursor: submitted ? "default" : "pointer",
                         }}
                       >
-                        <span className="min-w-0 flex-1 wrap-wrap-wrap-break-word">
+                        <span
+                          className={`${breakAnywhereClass} flex-1 font-mono text-[11px] sm:font-sans sm:text-[13px]`}
+                        >
                           {option}
                         </span>
                         {Icon && <span className="mt-0.5 shrink-0">{Icon}</span>}
@@ -396,14 +400,14 @@ export default function QuizTab({ lesson }: { lesson: Lesson }) {
                       Explanation
                     </p>
                     <p
-                      className="text-[12px] leading-relaxed"
+                      className={`${breakAnywhereClass} text-[12px] leading-relaxed`}
                       style={{ color: "var(--text)" }}
                     >
                       {q.explanation}
                     </p>
                     {q.interviewTakeaway && (
                       <p
-                        className="text-[12px] leading-relaxed"
+                        className={`${breakAnywhereClass} text-[12px] leading-relaxed`}
                         style={{ color: "var(--text-muted)" }}
                       >
                         <span className="font-semibold" style={{ color: "var(--accent)" }}>

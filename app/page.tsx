@@ -118,9 +118,9 @@ export default function Home() {
           )}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-hidden p-3 sm:p-4 md:p-6">
+        <div className="min-h-0 min-w-0 flex-1 overflow-hidden p-3 sm:p-4 md:p-6">
           <div
-            className={`flex h-full min-h-0 flex-col rounded-lg ${
+            className={`flex h-full min-h-0 min-w-0 flex-col rounded-lg ${
               !recruiterMode && activeTab === "learn"
                 ? "overflow-hidden p-0"
                 : "p-3 sm:rounded-xl sm:p-4 md:p-6"

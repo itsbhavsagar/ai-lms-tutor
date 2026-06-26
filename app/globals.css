@@ -130,6 +130,11 @@ textarea:focus-visible {
     --tw-ring-offset-shadow: 0 0 #0000 !important;
 }
 
+.break-anywhere {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
 .chat-composer:focus-within {
     outline: none;
     box-shadow: none;
