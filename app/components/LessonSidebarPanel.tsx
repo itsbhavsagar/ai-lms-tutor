@@ -8,7 +8,7 @@ import SidebarFooter from "./SidebarFooter";
 
 const BRAND_NAME = "AI LMS TUTOR";
 const BRAND_TAGLINE = "Your AI learning studio";
-const BRAND_STACK = "Groq · Cohere · RAG";
+const BRAND_STACK = "Groq - Cohere - RAG - Whisper";
 const TRACKS_LABEL = "Learning Tracks";
 
 type LessonSidebarPanelProps = {
